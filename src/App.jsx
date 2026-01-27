@@ -1288,8 +1288,8 @@ export default function App() {
         return false;
       }
 
-      // Call Netlify function to submit VAT verification
-      const response = await fetch("/.netlify/functions/submitVatVerification", {
+      // Call Vercel API to submit VAT verification
+      const response = await fetch("/api/submitVatVerification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
