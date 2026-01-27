@@ -2125,7 +2125,12 @@ export default function App() {
     const oidcJson = oidc || (await fetchJson(OIDC_CONFIG_URL));
     if (!oidc) setOidc(oidcJson);
 
-    const tokenJson = await httpPostForm(oidcJson.token_endpoint, {
+    let tokenEndpoint = oidcJson.token_endpoint;
+    if (Capacitor.isNativePlatform() && !tokenEndpoint.startsWith("http")) {
+      // Use absolute URL for native
+      tokenEndpoint = `https://${SHOP_DOMAIN}/account/oauth/token`;
+    }
+    const tokenJson = await httpPostForm(tokenEndpoint, {
       grant_type: "authorization_code",
       client_id: CUSTOMER_ACCOUNTS_CLIENT_ID,
       redirect_uri: REDIRECT_URI,
