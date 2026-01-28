@@ -32,6 +32,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Missing admin API token" });
     }
 
+    console.log(`[VAT] Using domain: ${shopDomain}, API version: ${apiVersion}`);
     console.log(`[VAT] Searching for customer: ${customerEmail}`);
 
     // Step 1: Find customer by email
