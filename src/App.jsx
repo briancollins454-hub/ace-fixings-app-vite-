@@ -2068,38 +2068,43 @@ export default function App() {
     await fetchCart(id);
   }
 
+  // Shopify returns prices EXCLUDING VAT
+  // Inc VAT = base price + 20%
+  // Ex VAT = base price as-is
   function displayPrice(basePrice) {
-    const inc = basePrice;
-    const ex = basePrice / (1 + VAT_RATE);
+    const num = parseFloat(basePrice) || 0;
+    const inc = num * (1 + VAT_RATE); // Add VAT for Inc VAT display
+    const ex = num; // Ex VAT is the raw Shopify price
     return vatMode === "inc" ? formatGBP(inc) : formatGBP(ex);
   }
 
   function displayCompareAt(compareAtPrice) {
     if (!compareAtPrice) return "";
-    const inc = compareAtPrice;
-    const ex = compareAtPrice / (1 + VAT_RATE);
+    const num = parseFloat(compareAtPrice) || 0;
+    const inc = num * (1 + VAT_RATE); // Add VAT for Inc VAT display
+    const ex = num; // Ex VAT is the raw Shopify price
     return vatMode === "inc" ? formatGBP(inc) : formatGBP(ex);
   }
 
   function getDisplayedCartTotals() {
     if (!cart) return { subtotal: 0, tax: 0, total: 0 };
-    // Shopify prices are Inc-VAT; recalculate based on vatMode
-    const lineSubtotal = cart.lines.reduce((sum, l) => sum + l.price * l.quantity, 0);
+    // Shopify prices are Ex-VAT; recalculate based on vatMode
+    const lineSubtotal = cart.lines.reduce((sum, l) => sum + parseFloat(l.price || 0) * l.quantity, 0);
     if (vatMode === "inc") {
+      // Inc-VAT mode: add VAT to subtotal
+      const incSubtotal = lineSubtotal * (1 + VAT_RATE);
+      const incTax = lineSubtotal * VAT_RATE;
       return {
-        subtotal: lineSubtotal,
-        tax: cart.cost.tax,
-        total: cart.cost.total,
+        subtotal: incSubtotal,
+        tax: incTax,
+        total: incSubtotal,
       };
     } else {
-      // Ex-VAT mode: remove VAT from all totals
-      const exSubtotal = lineSubtotal / (1 + VAT_RATE);
-      const exTax = 0;
-      const exTotal = exSubtotal;
+      // Ex-VAT mode: show raw prices
       return {
-        subtotal: exSubtotal,
-        tax: exTax,
-        total: exTotal,
+        subtotal: lineSubtotal,
+        tax: 0,
+        total: lineSubtotal,
       };
     }
   }
