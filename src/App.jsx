@@ -1125,6 +1125,9 @@ export default function App() {
   const [regLoading, setRegLoading] = useState(false);
   const [showRegForm, setShowRegForm] = useState(false);
   
+  // Collapsible description state
+  const [descExpanded, setDescExpanded] = useState(false);
+  
   // Bulk pricing multipliers (e.g., { "10-24": 0.95, "25-49": 0.90, "50+": 0.85 })
   const bulkPricingTiers = {
     "10": 0.95,   // 5% off
@@ -1860,6 +1863,7 @@ export default function App() {
         descriptionHtml: c.descriptionHtml || "",
         description: c.description || "",
       });
+      setDescExpanded(false); // Reset description collapsed state
 
       const products = c.products?.edges?.map((e) => normalizeProduct(e.node)) || [];
       setCollectionProducts(products);
@@ -2917,10 +2921,26 @@ export default function App() {
       <div style={shell}>
         <div style={topbar}>
           {/* Header Row */}
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", marginBottom: 12 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", marginBottom: 12 }}>
+            {/* Logo */}
+            <div style={{
+              width: 44,
+              height: 44,
+              borderRadius: 10,
+              overflow: "hidden",
+              flexShrink: 0,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            }}>
+              <img 
+                src="/logo.png" 
+                alt="Ace Fixings" 
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </div>
+            
             <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
               <div style={{ 
-                fontSize: 20, 
+                fontSize: 18, 
                 fontWeight: 800, 
                 letterSpacing: "-0.02em",
                 background: `linear-gradient(135deg, #fff 0%, ${BRAND.mutedLight} 100%)`,
@@ -2931,14 +2951,14 @@ export default function App() {
                 {BRAND.name}
               </div>
               <div style={{ 
-                fontSize: 11, 
-                color: BRAND.muted, 
+                fontSize: 10, 
+                color: BRAND.primary, 
                 marginTop: 2,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
+                fontWeight: 700,
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
               }}>
-                {userLine ? `✓ ${userLine}` : "Premium fixings & fasteners"}
+                {userLine ? `✓ ${userLine}` : "Deal Me An Ace"}
               </div>
             </div>
 
@@ -3235,8 +3255,50 @@ export default function App() {
               </div>
 
               {activeCollection?.descriptionHtml ? (
-                <div style={{ ...card, marginBottom: 12 }}>
-                  <div style={{ fontSize: 13, color: "#e5e5e5" }} dangerouslySetInnerHTML={{ __html: activeCollection.descriptionHtml }} />
+                <div 
+                  style={{ 
+                    ...card, 
+                    marginBottom: 12, 
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }}
+                  onClick={() => setDescExpanded(!descExpanded)}
+                >
+                  <div style={{ 
+                    display: "flex", 
+                    justifyContent: "space-between", 
+                    alignItems: "center",
+                    marginBottom: descExpanded ? 10 : 0,
+                  }}>
+                    <span style={{ 
+                      fontSize: 12, 
+                      fontWeight: 700, 
+                      color: BRAND.muted,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}>
+                      {descExpanded ? "Hide Description" : "View Description"}
+                    </span>
+                    <span style={{ 
+                      fontSize: 16, 
+                      color: BRAND.primary,
+                      transform: descExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 0.2s ease",
+                    }}>
+                      ▼
+                    </span>
+                  </div>
+                  {descExpanded && (
+                    <div 
+                      style={{ 
+                        fontSize: 13, 
+                        color: "#e5e5e5", 
+                        lineHeight: 1.6,
+                        animation: "fadeIn 0.3s ease",
+                      }} 
+                      dangerouslySetInnerHTML={{ __html: activeCollection.descriptionHtml }} 
+                    />
+                  )}
                 </div>
               ) : null}
 
