@@ -1015,6 +1015,20 @@ export default function App() {
   const [vatFormSubmitted, setVatFormSubmitted] = useState(false);
   const [vatFormLoading, setVatFormLoading] = useState(false);
   
+  // Simple registration form (no OAuth needed)
+  const [regEmail, setRegEmail] = useState("");
+  const [regFirstName, setRegFirstName] = useState("");
+  const [regLastName, setRegLastName] = useState("");
+  const [regPhone, setRegPhone] = useState("");
+  const [regAddress1, setRegAddress1] = useState("");
+  const [regCity, setRegCity] = useState("");
+  const [regCounty, setRegCounty] = useState("");
+  const [regPostcode, setRegPostcode] = useState("");
+  const [regCountry, setRegCountry] = useState("Ireland");
+  const [regVatNumber, setRegVatNumber] = useState("");
+  const [regLoading, setRegLoading] = useState(false);
+  const [showRegForm, setShowRegForm] = useState(false);
+  
   // Bulk pricing multipliers (e.g., { "10-24": 0.95, "25-49": 0.90, "50+": 0.85 })
   const bulkPricingTiers = {
     "10": 0.95,   // 5% off
@@ -1022,6 +1036,7 @@ export default function App() {
     "50": 0.85,   // 15% off
     "100": 0.80,  // 20% off
   };
+
 
   const deepLinkHandledRef = useRef(false);
 
@@ -1239,6 +1254,23 @@ export default function App() {
       if (email) setUserEmail(email);
       if (fullName) setUserName(fullName);
       
+      // Check if user already submitted VAT form (stored per-email)
+      if (email) {
+        const vatSubmittedData = await Preferences.get({ key: `vat_submitted_${email}` });
+        if (vatSubmittedData?.value) {
+          try {
+            const parsed = JSON.parse(vatSubmittedData.value);
+            if (parsed?.submitted) {
+              setVatFormSubmitted(true);
+            }
+          } catch (e) {
+            // ignore parse errors
+          }
+        } else {
+          setVatFormSubmitted(false); // Reset for new user
+        }
+      }
+      
       // If vat-verified tag exists, activate Ex-VAT mode
       if (isVatVerified) {
         setCompanyAccount({
@@ -1289,20 +1321,49 @@ export default function App() {
       }
 
       // Call Vercel API to submit VAT verification
-      const response = await fetch("/api/submitVatVerification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerEmail: customerEmail,
-          businessName,
-          country,
-          vatNumber,
-        }),
+      // Use CapacitorHttp on native to bypass CORS
+      const apiUrl = "https://ace-fixings-app.vercel.app/api/submitVatVerification";
+      const payload = JSON.stringify({
+        customerEmail: customerEmail,
+        businessName,
+        country,
+        vatNumber,
       });
 
-      const result = await response.json();
+      let text;
+      let status;
 
-      if (!response.ok) {
+      if (Capacitor.isNativePlatform()) {
+        // Native: use CapacitorHttp to avoid CORS
+        const r = await CapacitorHttp.request({
+          method: "POST",
+          url: apiUrl,
+          headers: { "Content-Type": "application/json" },
+          data: payload,
+        });
+        status = r?.status || 0;
+        text = typeof r?.data === "string" ? r.data : JSON.stringify(r?.data || {});
+      } else {
+        // Web: use fetch
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+        });
+        status = response.status;
+        text = await response.text();
+      }
+
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        console.error("API response was not JSON:", text);
+        setToast("❌ Error: API did not return JSON. See logs for details.");
+        return false;
+      }
+
+      if (status < 200 || status >= 300) {
         setToast(`❌ Error: ${result.error || "Failed to submit VAT verification"}`);
         return false;
       }
@@ -1311,10 +1372,125 @@ export default function App() {
       setVatFormBusinessName("");
       setVatFormVatNumber("");
       setVatFormSubmitted(true);
+      
+      // Save VAT submission status per user email
+      if (customerEmail) {
+        await Preferences.set({ 
+          key: `vat_submitted_${customerEmail}`, 
+          value: JSON.stringify({ submitted: true, date: Date.now() }) 
+        });
+      }
+      
       return true;
     } catch (err) {
       setToast(`❌ Error: ${err?.message || "Failed to submit VAT verification"}`);
       return false;
+    }
+  }
+
+  // Simple registration - creates customer directly in Shopify
+  async function registerCustomer() {
+    if (!regEmail) {
+      setToast("❌ Email is required");
+      return;
+    }
+    
+    setRegLoading(true);
+    try {
+      const apiUrl = "https://ace-fixings-app.vercel.app/api/registerCustomer";
+      const payload = {
+        email: regEmail,
+        firstName: regFirstName,
+        lastName: regLastName,
+        phone: regPhone,
+        address: {
+          address1: regAddress1,
+          city: regCity,
+          province: regCounty,
+          zip: regPostcode,
+          country: regCountry,
+        },
+        vatNumber: regVatNumber,
+      };
+
+      let text, status;
+      
+      if (Capacitor.isNativePlatform()) {
+        const r = await CapacitorHttp.request({
+          method: "POST",
+          url: apiUrl,
+          headers: { "Content-Type": "application/json" },
+          data: JSON.stringify(payload),
+        });
+        status = r?.status || 0;
+        text = typeof r?.data === "string" ? r.data : JSON.stringify(r?.data || {});
+      } else {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        status = response.status;
+        text = await response.text();
+      }
+
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch (e) {
+        setToast("❌ Server error. Please try again.");
+        return;
+      }
+
+      if (status < 200 || status >= 300) {
+        setToast(`❌ ${result.error || "Registration failed"}`);
+        return;
+      }
+
+      // Success! Store user info locally
+      setUserEmail(regEmail);
+      setUserName(`${regFirstName} ${regLastName}`.trim() || regEmail);
+      
+      // Store in Preferences
+      await Preferences.set({
+        key: K.PROFILE,
+        value: JSON.stringify({ 
+          firstName: regFirstName, 
+          lastName: regLastName, 
+          email: regEmail, 
+          fullName: `${regFirstName} ${regLastName}`.trim(),
+          registeredAt: Date.now() 
+        }),
+      });
+
+      // If VAT number provided, mark as submitted
+      if (regVatNumber) {
+        setVatFormSubmitted(true);
+        await Preferences.set({ 
+          key: `vat_submitted_${regEmail}`, 
+          value: JSON.stringify({ submitted: true, date: Date.now() }) 
+        });
+      }
+
+      // Clear form
+      setRegEmail("");
+      setRegFirstName("");
+      setRegLastName("");
+      setRegPhone("");
+      setRegAddress1("");
+      setRegCity("");
+      setRegCounty("");
+      setRegPostcode("");
+      setRegVatNumber("");
+      setShowRegForm(false);
+
+      setToast(`✓ ${result.message}`);
+      setView("home");
+      
+    } catch (err) {
+      setToast(`❌ ${err?.message || "Registration failed"}`);
+    } finally {
+      setRegLoading(false);
     }
   }
 
@@ -2167,6 +2343,8 @@ export default function App() {
     setUserName("");
     setIsNonVatCustomer(false);
     setVatMode("inc"); // Reset VAT mode on logout
+    setVatFormSubmitted(false); // Reset VAT form state on logout
+    setCompanyAccount(null); // Reset company account
     setOrders([]);
     setActiveOrder(null);
     await Preferences.remove({ key: K.AUTH });
@@ -3333,11 +3511,142 @@ export default function App() {
                 </div>
               )}
 
-              {!auth ? (
-                <Button onClick={startLogin} style={{ width: "100%" }}>
-                  Login with OAuth
-                </Button>
-              ) : (
+              {!auth && !userEmail ? (
+                <div>
+                  {!showRegForm ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <Button onClick={() => setShowRegForm(true)} style={{ width: "100%" }}>
+                        📝 Register / Sign Up
+                      </Button>
+                      <Button variant="dark" onClick={startLogin} style={{ width: "100%" }}>
+                        🔐 Login with Shopify (Existing Customers)
+                      </Button>
+                    </div>
+                  ) : (
+                    <div style={{ background: "#1a1a1a", padding: 14, borderRadius: 12, border: "1px solid #333" }}>
+                      <div style={{ fontSize: 14, fontWeight: 900, color: "#fff", marginBottom: 12 }}>
+                        📝 Create Account
+                      </div>
+                      
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <input
+                          type="email"
+                          placeholder="Email *"
+                          value={regEmail}
+                          onChange={(e) => setRegEmail(e.target.value)}
+                          style={{ padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
+                        />
+                        
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input
+                            type="text"
+                            placeholder="First Name"
+                            value={regFirstName}
+                            onChange={(e) => setRegFirstName(e.target.value)}
+                            style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Last Name"
+                            value={regLastName}
+                            onChange={(e) => setRegLastName(e.target.value)}
+                            style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
+                          />
+                        </div>
+                        
+                        <input
+                          type="tel"
+                          placeholder="Phone"
+                          value={regPhone}
+                          onChange={(e) => setRegPhone(e.target.value)}
+                          style={{ padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
+                        />
+                        
+                        <input
+                          type="text"
+                          placeholder="Address"
+                          value={regAddress1}
+                          onChange={(e) => setRegAddress1(e.target.value)}
+                          style={{ padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
+                        />
+                        
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input
+                            type="text"
+                            placeholder="City"
+                            value={regCity}
+                            onChange={(e) => setRegCity(e.target.value)}
+                            style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
+                          />
+                          <input
+                            type="text"
+                            placeholder="County"
+                            value={regCounty}
+                            onChange={(e) => setRegCounty(e.target.value)}
+                            style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
+                          />
+                        </div>
+                        
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <input
+                            type="text"
+                            placeholder="Postcode"
+                            value={regPostcode}
+                            onChange={(e) => setRegPostcode(e.target.value)}
+                            style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
+                          />
+                          <select
+                            value={regCountry}
+                            onChange={(e) => setRegCountry(e.target.value)}
+                            style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
+                          >
+                            <option value="Ireland">Ireland</option>
+                            <option value="United Kingdom">United Kingdom</option>
+                            <option value="Germany">Germany</option>
+                            <option value="France">France</option>
+                            <option value="Netherlands">Netherlands</option>
+                            <option value="Belgium">Belgium</option>
+                            <option value="Spain">Spain</option>
+                            <option value="Italy">Italy</option>
+                            <option value="Poland">Poland</option>
+                            <option value="Other">Other EU</option>
+                          </select>
+                        </div>
+                        
+                        <div style={{ borderTop: "1px solid #333", marginTop: 6, paddingTop: 10 }}>
+                          <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>
+                            VAT Number (optional - for B2B tax exemption)
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="VAT Number (e.g., IE1234567X)"
+                            value={regVatNumber}
+                            onChange={(e) => setRegVatNumber(e.target.value)}
+                            style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14, boxSizing: "border-box" }}
+                          />
+                        </div>
+                        
+                        <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                          <Button 
+                            variant="dark" 
+                            onClick={() => setShowRegForm(false)} 
+                            style={{ flex: 1 }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button 
+                            onClick={registerCustomer} 
+                            loading={regLoading}
+                            style={{ flex: 2 }}
+                          >
+                            {regLoading ? "Creating Account..." : "Create Account"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : auth ? (
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <Button variant="dark" onClick={() => setView("home")} style={{ flex: 1, minWidth: 160 }}>
                     Back to Shop
@@ -3349,7 +3658,30 @@ export default function App() {
                     Logout
                   </Button>
                 </div>
-              )}
+              ) : userEmail ? (
+                <div>
+                  <div style={{ background: "#1a2a1a", padding: 12, borderRadius: 8, marginBottom: 12, border: "1px solid #2a3a2a" }}>
+                    <div style={{ fontSize: 13, color: "#8c8", marginBottom: 4 }}>✓ Registered as:</div>
+                    <div style={{ fontSize: 14, color: "#fff", fontWeight: 600 }}>{userEmail}</div>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <Button variant="dark" onClick={() => setView("home")} style={{ flex: 1, minWidth: 120 }}>
+                      Shop
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        setUserEmail("");
+                        setUserName("");
+                        Preferences.remove({ key: K.PROFILE });
+                        setToast("Logged out");
+                      }} 
+                      style={{ flex: 1, minWidth: 120 }}
+                    >
+                      Logout
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
 
               <div style={{ height: 14 }} />
               <div style={{ fontSize: 12, color: BRAND.muted }}>
