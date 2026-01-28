@@ -1447,32 +1447,18 @@ export default function App() {
         return;
       }
 
-      // Success! Store user info locally
-      setUserEmail(regEmail);
-      setUserName(`${regFirstName} ${regLastName}`.trim() || regEmail);
-      
-      // Store in Preferences
-      await Preferences.set({
-        key: K.PROFILE,
-        value: JSON.stringify({ 
-          firstName: regFirstName, 
-          lastName: regLastName, 
-          email: regEmail, 
-          fullName: `${regFirstName} ${regLastName}`.trim(),
-          registeredAt: Date.now() 
-        }),
-      });
+      // Success! But DON'T log them in - they need to verify via email first
+      // The API sends an account invite email to set their password
 
-      // If VAT number provided, mark as submitted
+      // If VAT number provided, mark as submitted for this email
       if (regVatNumber) {
-        setVatFormSubmitted(true);
         await Preferences.set({ 
           key: `vat_submitted_${regEmail}`, 
           value: JSON.stringify({ submitted: true, date: Date.now() }) 
         });
       }
 
-      // Clear form
+      // Clear form - DON'T set userEmail, they need to login properly via OAuth
       setRegEmail("");
       setRegFirstName("");
       setRegLastName("");
@@ -1484,8 +1470,9 @@ export default function App() {
       setRegVatNumber("");
       setShowRegForm(false);
 
-      setToast(`✓ ${result.message}`);
-      setView("home");
+      // Show success message prompting them to check email
+      setToast(`✓ Account created! Check your email to set your password, then login.`);
+      // Stay on account page so they can see the login button
       
     } catch (err) {
       setToast(`❌ ${err?.message || "Registration failed"}`);
