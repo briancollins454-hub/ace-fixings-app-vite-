@@ -127,7 +127,40 @@ export default async function handler(req, res) {
 
     console.log(`[VAT] Metafields updated for customer ${customerId}`);
 
-    // Success - metafields are saved, admin can review in Shopify
+    // Step 3: Add "No Vat Customers" tag to customer so they appear in the segment
+    const addTagMutation = `
+      mutation AddCustomerTag($id: ID!, $tags: [String!]!) {
+        tagsAdd(id: $id, tags: $tags) {
+          userErrors {
+            field
+            message
+          }
+          node {
+            id
+          }
+        }
+      }
+    `;
+
+    const tagResponse = await graphqlRequest(
+      shopDomain,
+      adminToken,
+      apiVersion,
+      addTagMutation,
+      {
+        id: customerId,
+        tags: ["No Vat Customers"],
+      }
+    );
+
+    if (tagResponse?.tagsAdd?.userErrors?.length > 0) {
+      console.warn("[VAT] Tag add warning:", tagResponse.tagsAdd.userErrors);
+      // Don't fail - metafields were saved successfully
+    } else {
+      console.log(`[VAT] Added 'No Vat Customers' tag to customer ${customerId}`);
+    }
+
+    // Success - metafields are saved and tag added
     return res.status(200).json({
       success: true,
       message: "VAT verification submitted successfully. Your application will be reviewed shortly.",
