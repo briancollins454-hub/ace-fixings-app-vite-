@@ -28,38 +28,49 @@ import OneSignal from "onesignal-cordova-plugin";
 const { useEffect, useMemo, useRef, useState } = React;
 
 // ==========================
-// BRAND / THEME
+// BRAND / THEME - ULTRA PREMIUM
 // ==========================
 const BRAND = {
   name: "Ace Fixings",
   domain: "acefixings.com",
-  // Premium color palette
+  // Premium color palette - Rich & Vibrant
   primary: "#ef4444",
-  primaryGlow: "rgba(239, 68, 68, 0.4)",
+  primaryLight: "#f87171",
+  primaryDark: "#dc2626",
+  primaryGlow: "rgba(239, 68, 68, 0.5)",
   secondary: "#f97316",
+  secondaryGlow: "rgba(249, 115, 22, 0.4)",
   accent: "#8b5cf6",
-  success: "#22c55e",
-  warning: "#eab308",
-  // Dark theme with depth
-  bg: "#050505",
-  bgGradient: "linear-gradient(180deg, #0a0a0a 0%, #050505 100%)",
-  card: "#0d0d0d",
-  cardHover: "#121212",
-  cardBorder: "rgba(255,255,255,0.06)",
-  // Glass effect
-  glass: "rgba(15, 15, 15, 0.85)",
-  glassBorder: "rgba(255,255,255,0.08)",
-  glassHeavy: "rgba(10, 10, 10, 0.95)",
+  accentGlow: "rgba(139, 92, 246, 0.4)",
+  success: "#10b981",
+  successGlow: "rgba(16, 185, 129, 0.4)",
+  warning: "#f59e0b",
+  gold: "#fbbf24",
+  goldGlow: "rgba(251, 191, 36, 0.4)",
+  // Ultra Dark Premium Theme
+  bg: "#030303",
+  bgAlt: "#0a0a0a",
+  bgGradient: "linear-gradient(180deg, #0a0a0a 0%, #030303 50%, #050505 100%)",
+  card: "#0c0c0c",
+  cardHover: "#141414",
+  cardBorder: "rgba(255,255,255,0.05)",
+  cardGlow: "rgba(239, 68, 68, 0.1)",
+  // Premium Glass effects
+  glass: "rgba(12, 12, 12, 0.8)",
+  glassBorder: "rgba(255,255,255,0.1)",
+  glassHeavy: "rgba(8, 8, 8, 0.95)",
+  glassShine: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%)",
   // Typography
   text: "#ffffff",
   textSecondary: "#e5e5e5",
   muted: "#737373",
   mutedLight: "#a3a3a3",
-  // Shadows
-  shadowSm: "0 2px 8px rgba(0,0,0,0.4)",
-  shadowMd: "0 8px 24px rgba(0,0,0,0.5)",
-  shadowLg: "0 16px 48px rgba(0,0,0,0.6)",
-  shadowGlow: "0 0 30px rgba(239,68,68,0.3)",
+  // Premium Shadows
+  shadowSm: "0 2px 8px rgba(0,0,0,0.5)",
+  shadowMd: "0 8px 32px rgba(0,0,0,0.6)",
+  shadowLg: "0 24px 64px rgba(0,0,0,0.7)",
+  shadowGlow: "0 0 40px rgba(239,68,68,0.4)",
+  shadowGlowHover: "0 0 60px rgba(239,68,68,0.5)",
 };
 
 // ==========================
@@ -310,18 +321,18 @@ const K = {
 // ==========================
 function Button({ children, onClick, disabled, style, variant = "primary", title, className, type = "button", loading = false, icon, size = "md" }) {
   const sizes = {
-    sm: { padding: "10px 14px", fontSize: 13, borderRadius: 12, gap: 6 },
-    md: { padding: "14px 18px", fontSize: 14, borderRadius: 16, gap: 8 },
-    lg: { padding: "16px 24px", fontSize: 15, borderRadius: 18, gap: 10 },
+    sm: { padding: "10px 14px", fontSize: 13, borderRadius: 14, gap: 6 },
+    md: { padding: "14px 20px", fontSize: 14, borderRadius: 16, gap: 8 },
+    lg: { padding: "18px 28px", fontSize: 15, borderRadius: 20, gap: 10 },
   };
   const base = {
     border: "none",
     ...sizes[size],
-    fontWeight: 600,
-    letterSpacing: "0.01em",
+    fontWeight: 700,
+    letterSpacing: "0.02em",
     cursor: disabled || loading ? "not-allowed" : "pointer",
     opacity: disabled ? 0.5 : 1,
-    transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+    transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
     userSelect: "none",
     display: "inline-flex",
     alignItems: "center",
@@ -333,50 +344,61 @@ function Button({ children, onClick, disabled, style, variant = "primary", title
   };
   const variants = {
     primary: { 
-      background: `linear-gradient(135deg, ${BRAND.primary} 0%, #ff6b6b 50%, ${BRAND.secondary} 100%)`,
+      background: `linear-gradient(135deg, ${BRAND.primary} 0%, #ff6b6b 40%, ${BRAND.secondary} 100%)`,
       backgroundSize: "200% 200%",
-      animation: "gradientShift 3s ease infinite",
+      animation: "gradientShift 4s ease infinite",
       color: "#fff",
-      boxShadow: `0 4px 20px ${BRAND.primaryGlow}`,
-      textShadow: "0 1px 2px rgba(0,0,0,0.2)",
+      boxShadow: `0 8px 28px ${BRAND.primaryGlow}, inset 0 1px 0 rgba(255,255,255,0.15)`,
+      textShadow: "0 2px 4px rgba(0,0,0,0.3)",
+      border: "1px solid rgba(255,255,255,0.1)",
     },
     ghost: { 
       background: "rgba(255,255,255,0.03)", 
-      backdropFilter: "blur(10px)",
-      WebkitBackdropFilter: "blur(10px)",
+      backdropFilter: "blur(12px)",
+      WebkitBackdropFilter: "blur(12px)",
       color: "#fff", 
       border: "1px solid rgba(255,255,255,0.08)",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
     },
     dark: { 
-      background: "rgba(255,255,255,0.05)", 
+      background: "linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))", 
       color: "#fff", 
-      border: "1px solid rgba(255,255,255,0.1)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)",
     },
     success: {
-      background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+      background: "linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)",
+      backgroundSize: "200% 200%",
+      animation: "gradientShift 4s ease infinite",
       color: "#fff",
-      boxShadow: "0 4px 20px rgba(34,197,94,0.3)",
+      boxShadow: "0 8px 28px rgba(34,197,94,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+      textShadow: "0 2px 4px rgba(0,0,0,0.2)",
+      border: "1px solid rgba(255,255,255,0.1)",
     },
     accent: {
-      background: `linear-gradient(135deg, ${BRAND.accent} 0%, #a78bfa 100%)`,
+      background: `linear-gradient(135deg, ${BRAND.accent} 0%, #a78bfa 50%, #c4b5fd 100%)`,
+      backgroundSize: "200% 200%",
+      animation: "gradientShift 4s ease infinite",
       color: "#fff",
-      boxShadow: "0 4px 20px rgba(139,92,246,0.3)",
+      boxShadow: "0 8px 28px rgba(139,92,246,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
+      textShadow: "0 2px 4px rgba(0,0,0,0.2)",
+      border: "1px solid rgba(255,255,255,0.1)",
     },
   };
   return (
     <button
       type={type}
-      className={className}
+      className={`${className || ''} btn-glow`}
       title={title}
       onClick={disabled || loading ? undefined : onClick}
       style={{ ...base, ...variants[variant], ...style }}
       onMouseDown={(e) => {
-        if (!disabled && !loading) e.currentTarget.style.transform = "scale(0.96)";
+        if (!disabled && !loading) e.currentTarget.style.transform = "scale(0.95)";
       }}
       onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
       onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
       onTouchStart={(e) => {
-        if (!disabled && !loading) e.currentTarget.style.transform = "scale(0.96)";
+        if (!disabled && !loading) e.currentTarget.style.transform = "scale(0.95)";
       }}
       onTouchEnd={(e) => (e.currentTarget.style.transform = "scale(1)")}
     >
@@ -389,13 +411,13 @@ function Button({ children, onClick, disabled, style, variant = "primary", title
             border: "2px solid rgba(255,255,255,0.2)", 
             borderTopColor: "#fff", 
             borderRadius: "50%", 
-            animation: "spin 0.7s linear infinite" 
+            animation: "spin 0.6s linear infinite" 
           }} />
           {children}
         </>
       ) : (
         <>
-          {icon && <span style={{ fontSize: "1.1em" }}>{icon}</span>}
+          {icon && <span style={{ fontSize: "1.15em" }}>{icon}</span>}
           {children}
         </>
       )}
@@ -448,19 +470,22 @@ function Skeleton({ h = 16, w = "100%", r = 16, style }) {
 function Badge({ children, variant = "default" }) {
   const variants = {
     default: {
-      background: "rgba(255,255,255,0.08)",
+      background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.06))",
       border: "1px solid rgba(255,255,255,0.12)",
       color: "#fff",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
     },
     primary: {
       background: `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`,
-      border: "none",
+      border: "1px solid rgba(255,255,255,0.1)",
       color: "#fff",
+      boxShadow: `0 4px 12px ${BRAND.primaryGlow}`,
     },
     success: {
-      background: "rgba(34,197,94,0.15)",
+      background: "linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.12))",
       border: "1px solid rgba(34,197,94,0.3)",
       color: "#4ade80",
+      boxShadow: "0 2px 8px rgba(34,197,94,0.15)",
     },
   };
   return (
@@ -469,12 +494,13 @@ function Badge({ children, variant = "default" }) {
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        minWidth: 20,
-        height: 20,
-        padding: "0 7px",
+        minWidth: 22,
+        height: 22,
+        padding: "0 8px",
         borderRadius: 999,
         fontSize: 11,
         fontWeight: 700,
+        letterSpacing: "0.02em",
         lineHeight: 1,
         ...variants[variant],
       }}
@@ -550,31 +576,34 @@ function VatToggle({ mode, onChange }) {
   return (
     <div style={{ 
       display: "flex", 
-      gap: 2, 
+      gap: 3, 
       alignItems: "center",
-      background: "rgba(255,255,255,0.03)",
-      padding: 3,
-      borderRadius: 12,
+      background: "linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))",
+      padding: 4,
+      borderRadius: 14,
       border: "1px solid rgba(255,255,255,0.06)",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.03)",
     }}>
       <button
         type="button"
         onClick={() => onChange("inc")}
         style={{
           flex: 1,
-          padding: "8px 12px",
-          borderRadius: 10,
+          padding: "9px 14px",
+          borderRadius: 11,
           background: mode === "inc" 
             ? `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`
             : "transparent",
-          border: "none",
+          border: mode === "inc" ? "1px solid rgba(255,255,255,0.1)" : "none",
           color: mode === "inc" ? "#fff" : BRAND.muted,
-          fontWeight: 600,
-          fontSize: 12,
+          fontWeight: 700,
+          fontSize: 11,
+          letterSpacing: "0.03em",
           cursor: "pointer",
-          transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
-          boxShadow: mode === "inc" ? `0 4px 12px ${BRAND.primaryGlow}` : "none",
+          transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          boxShadow: mode === "inc" ? `0 6px 16px ${BRAND.primaryGlow}, inset 0 1px 0 rgba(255,255,255,0.15)` : "none",
           whiteSpace: "nowrap",
+          textTransform: "uppercase",
         }}
       >
         Inc VAT
@@ -584,19 +613,21 @@ function VatToggle({ mode, onChange }) {
         onClick={() => onChange("ex")}
         style={{
           flex: 1,
-          padding: "8px 12px",
-          borderRadius: 10,
+          padding: "9px 14px",
+          borderRadius: 11,
           background: mode === "ex" 
             ? `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`
             : "transparent",
-          border: "none",
+          border: mode === "ex" ? "1px solid rgba(255,255,255,0.1)" : "none",
           color: mode === "ex" ? "#fff" : BRAND.muted,
-          fontWeight: 600,
-          fontSize: 12,
+          fontWeight: 700,
+          fontSize: 11,
+          letterSpacing: "0.03em",
           cursor: "pointer",
-          transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
-          boxShadow: mode === "ex" ? `0 4px 12px ${BRAND.primaryGlow}` : "none",
+          transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          boxShadow: mode === "ex" ? `0 6px 16px ${BRAND.primaryGlow}, inset 0 1px 0 rgba(255,255,255,0.15)` : "none",
           whiteSpace: "nowrap",
+          textTransform: "uppercase",
         }}
       >
         Ex VAT
@@ -1657,9 +1688,25 @@ export default function App() {
 
         if (isNative && ONESIGNAL_APP_ID) {
           try {
-            OneSignal.setAppId(ONESIGNAL_APP_ID);
-            OneSignal.promptForPushNotificationsWithUserResponse(() => {});
-          } catch {}
+            console.log("[OneSignal] Initializing with App ID:", ONESIGNAL_APP_ID);
+            
+            // OneSignal SDK 5.x API
+            OneSignal.initialize(ONESIGNAL_APP_ID);
+            
+            // Request notification permission
+            OneSignal.Notifications.requestPermission(true).then((accepted) => {
+              console.log("[OneSignal] Permission accepted:", accepted);
+            });
+            
+            // Log subscription status
+            OneSignal.User.pushSubscription.getIdAsync().then((id) => {
+              console.log("[OneSignal] Push Subscription ID:", id);
+            });
+            
+            console.log("[OneSignal] Initialization complete");
+          } catch (err) {
+            console.error("[OneSignal] Init error:", err);
+          }
         }
 
         const savedVat = await Preferences.get({ key: K.VAT_MODE });
@@ -2582,42 +2629,44 @@ export default function App() {
     right: 0,
     bottom: 0,
     zIndex: 9999,
-    background: BRAND.glassHeavy,
-    backdropFilter: "blur(20px) saturate(180%)",
-    WebkitBackdropFilter: "blur(20px) saturate(180%)",
-    borderTop: `1px solid ${BRAND.glassBorder}`,
-    paddingTop: 8,
-    paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
-    paddingLeft: "calc(6px + env(safe-area-inset-left))",
-    paddingRight: "calc(6px + env(safe-area-inset-right))",
+    background: "linear-gradient(180deg, rgba(15,15,15,0.97) 0%, rgba(8,8,8,0.99) 100%)",
+    backdropFilter: "blur(24px) saturate(200%)",
+    WebkitBackdropFilter: "blur(24px) saturate(200%)",
+    borderTop: "1px solid rgba(255,255,255,0.08)",
+    paddingTop: 10,
+    paddingBottom: "calc(10px + env(safe-area-inset-bottom))",
+    paddingLeft: "calc(8px + env(safe-area-inset-left))",
+    paddingRight: "calc(8px + env(safe-area-inset-right))",
     display: "flex",
     justifyContent: "center",
     transform: "translateZ(0)",
     backfaceVisibility: "hidden",
     WebkitBackfaceVisibility: "hidden",
+    boxShadow: "0 -8px 32px rgba(0,0,0,0.4), 0 -1px 0 rgba(239,68,68,0.1) inset",
+    animation: "navGlow 4s ease-in-out infinite",
   };
 
   const navInner = {
     width: "100%",
     maxWidth: 600,
     display: "flex",
-    gap: 4,
+    gap: 6,
     justifyContent: "space-around",
     alignItems: "center",
-    padding: "0 2px",
+    padding: "0 4px",
   };
 
   const navBtn = (active) => ({
     flex: "1 1 0",
     minWidth: 0,
     maxWidth: 72,
-    height: 52,
-    padding: "6px 2px",
-    borderRadius: 14,
+    height: 56,
+    padding: "8px 4px",
+    borderRadius: 16,
     background: active 
       ? `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`
       : "rgba(255,255,255,0.03)",
-    border: active ? "none" : "1px solid rgba(255,255,255,0.06)",
+    border: active ? "1px solid rgba(255,255,255,0.15)" : "1px solid rgba(255,255,255,0.04)",
     color: active ? "#fff" : BRAND.mutedLight,
     fontWeight: 700,
     fontSize: 10,
@@ -2626,11 +2675,14 @@ export default function App() {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
+    gap: 3,
     lineHeight: 1.1,
     overflow: "hidden",
-    transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
-    boxShadow: active ? "0 4px 16px rgba(239,68,68,0.35)" : "none",
+    transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+    boxShadow: active 
+      ? "0 8px 24px rgba(239,68,68,0.4), 0 0 1px rgba(255,255,255,0.2) inset" 
+      : "0 2px 8px rgba(0,0,0,0.2)",
+    position: "relative",
   });
 
   const cartCount = cart?.totalQuantity || 0;
@@ -2645,25 +2697,25 @@ export default function App() {
   }, [userName, userEmail]);
 
   const GLOBAL_CSS = `
-    /* ====== PREMIUM ANIMATIONS ====== */
+    /* ====== ULTRA PREMIUM ANIMATIONS ====== */
     @keyframes shimmer { 
       0% { background-position: -1000px 0; } 
       100% { background-position: 1000px 0; } 
     }
     @keyframes viewIn { 
-      from { opacity: 0; transform: translateY(12px) scale(0.98); } 
+      from { opacity: 0; transform: translateY(16px) scale(0.96); } 
       to { opacity: 1; transform: translateY(0) scale(1); } 
     }
     @keyframes cardSlideIn { 
-      from { opacity: 0; transform: translateY(20px) scale(0.95); } 
+      from { opacity: 0; transform: translateY(30px) scale(0.92); } 
       to { opacity: 1; transform: translateY(0) scale(1); } 
     }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-    @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes slideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     @keyframes gradientShift { 
       0% { background-position: 0% 50%; } 
@@ -2671,33 +2723,72 @@ export default function App() {
       100% { background-position: 0% 50%; } 
     }
     @keyframes glow {
-      0%, 100% { box-shadow: 0 0 20px rgba(239,68,68,0.3); }
-      50% { box-shadow: 0 0 40px rgba(239,68,68,0.5); }
+      0%, 100% { box-shadow: 0 0 20px rgba(239,68,68,0.3), 0 0 40px rgba(239,68,68,0.1); }
+      50% { box-shadow: 0 0 40px rgba(239,68,68,0.5), 0 0 80px rgba(239,68,68,0.2); }
     }
     @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-6px) rotate(1deg); }
+      75% { transform: translateY(-3px) rotate(-1deg); }
     }
     @keyframes scaleIn {
-      from { opacity: 0; transform: scale(0.9); }
+      from { opacity: 0; transform: scale(0.85); }
       to { opacity: 1; transform: scale(1); }
     }
     @keyframes ripple {
       to { transform: scale(4); opacity: 0; }
     }
     @keyframes borderGlow {
-      0%, 100% { border-color: rgba(239,68,68,0.3); }
-      50% { border-color: rgba(239,68,68,0.6); }
+      0%, 100% { border-color: rgba(239,68,68,0.2); box-shadow: 0 0 20px rgba(239,68,68,0.1); }
+      50% { border-color: rgba(239,68,68,0.5); box-shadow: 0 0 30px rgba(239,68,68,0.2); }
+    }
+    @keyframes logoReveal {
+      0% { opacity: 0; transform: scale(0.5) rotate(-10deg); filter: blur(10px); }
+      50% { opacity: 1; transform: scale(1.1) rotate(2deg); filter: blur(0); }
+      100% { opacity: 1; transform: scale(1) rotate(0deg); filter: blur(0); }
+    }
+    @keyframes textReveal {
+      0% { opacity: 0; transform: translateY(20px); letter-spacing: 0.3em; }
+      100% { opacity: 1; transform: translateY(0); letter-spacing: 0.05em; }
+    }
+    @keyframes particleFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.6; }
+      25% { transform: translate(10px, -20px) scale(1.2); opacity: 0.8; }
+      50% { transform: translate(-5px, -40px) scale(0.8); opacity: 0.4; }
+      75% { transform: translate(-15px, -20px) scale(1.1); opacity: 0.7; }
+    }
+    @keyframes shimmerPremium {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    @keyframes pulseRing {
+      0% { transform: scale(0.9); opacity: 1; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+    @keyframes slideInUp {
+      from { opacity: 0; transform: translateY(60px) scale(0.9); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes navGlow {
+      0%, 100% { box-shadow: 0 -4px 30px rgba(239,68,68,0.15); }
+      50% { box-shadow: 0 -4px 40px rgba(239,68,68,0.25); }
+    }
+    @keyframes shine {
+      0% { left: -100%; }
+      100% { left: 200%; }
     }
 
-    /* ====== BASE STYLES ====== */
+    /* ====== BASE STYLES - ULTRA PREMIUM ====== */
     html, body, #root {
       width: 100%;
       height: 100%;
       margin: 0;
       padding: 0;
       background: ${BRAND.bg};
-      background-image: radial-gradient(ellipse at top, rgba(239,68,68,0.03) 0%, transparent 50%);
+      background-image: 
+        radial-gradient(ellipse at top center, rgba(239,68,68,0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom right, rgba(139,92,246,0.04) 0%, transparent 40%),
+        radial-gradient(ellipse at bottom left, rgba(249,115,22,0.03) 0%, transparent 40%);
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
@@ -2725,32 +2816,33 @@ export default function App() {
       color: #fff;
     }
 
-    /* ====== SCROLLBAR STYLING ====== */
+    /* ====== PREMIUM SCROLLBAR ====== */
     ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
     }
     ::-webkit-scrollbar-track {
-      background: transparent;
+      background: rgba(255,255,255,0.02);
+      border-radius: 10px;
     }
     ::-webkit-scrollbar-thumb {
-      background: rgba(255,255,255,0.15);
+      background: linear-gradient(180deg, rgba(239,68,68,0.4), rgba(249,115,22,0.3));
       border-radius: 10px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: rgba(255,255,255,0.25);
+      background: linear-gradient(180deg, rgba(239,68,68,0.6), rgba(249,115,22,0.5));
     }
 
-    /* ====== UTILITY CLASSES ====== */
+    /* ====== PREMIUM UTILITY CLASSES ====== */
     .skeleton-shimmer {
-      background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%);
+      background: linear-gradient(90deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.02) 100%);
       background-size: 1000px 100%;
-      animation: shimmer 2s infinite;
+      animation: shimmer 1.5s infinite;
     }
 
     .btn-loading {
       pointer-events: none;
-      opacity: 0.8;
+      opacity: 0.85;
     }
 
     .btn-loading::after {
@@ -2761,20 +2853,38 @@ export default function App() {
       border: 2px solid rgba(255,255,255,0.2);
       border-top-color: #fff;
       border-radius: 50%;
-      animation: spin 0.7s linear infinite;
+      animation: spin 0.6s linear infinite;
       margin-left: 8px;
     }
 
     .card-hover {
-      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .card-hover::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+      transition: left 0.5s ease;
+      pointer-events: none;
     }
 
     .card-hover:active {
-      transform: scale(0.97);
+      transform: scale(0.96);
+    }
+    
+    .card-hover:active::before {
+      left: 200%;
     }
 
     .price-transition {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     a { 
@@ -2783,40 +2893,77 @@ export default function App() {
     }
 
     .view-anim {
-      animation: viewIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: viewIn 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
       will-change: transform, opacity;
     }
 
-    /* ====== GLASS MORPHISM ====== */
+    /* ====== PREMIUM GLASS MORPHISM ====== */
     .glass-card {
       background: rgba(255,255,255,0.03);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
       border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 20px;
+      border-radius: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
     }
 
     /* ====== PREMIUM INPUT STYLING ====== */
     .premium-input {
       width: 100%;
-      padding: 14px 16px;
+      padding: 14px 18px;
       background: rgba(255,255,255,0.03);
       border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 14px;
+      border-radius: 16px;
       color: #fff;
       font-size: 15px;
       font-weight: 500;
-      transition: all 0.2s ease;
+      transition: all 0.25s ease;
+      position: relative;
     }
     
     .premium-input:focus {
       background: rgba(255,255,255,0.05);
       border-color: rgba(239,68,68,0.5);
-      box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
+      box-shadow: 0 0 0 4px rgba(239,68,68,0.1), 0 8px 32px rgba(0,0,0,0.3);
     }
     
     .premium-input::placeholder {
-      color: rgba(255,255,255,0.35);
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* ====== PREMIUM BUTTON GLOW ====== */
+    .btn-glow {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn-glow::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.4s ease, height 0.4s ease;
+    }
+    
+    .btn-glow:active::after {
+      width: 300%;
+      height: 300%;
     }
 
     /* ====== RESPONSIVE - FOLD PHONES ====== */
@@ -2845,69 +2992,207 @@ export default function App() {
     return (
       <div style={layout}>
         <style>{GLOBAL_CSS}</style>
-        <div style={shell}>
-          {/* Premium Loading Screen */}
+        <div style={{
+          ...shell,
+          background: `linear-gradient(180deg, ${BRAND.bg} 0%, #050505 100%)`,
+          position: "relative",
+          overflow: "hidden",
+        }}>
+          {/* ====== ULTRA PREMIUM LOADING SCREEN ====== */}
+          
+          {/* Animated Background Particles */}
+          <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            overflow: "hidden",
+            pointerEvents: "none",
+          }}>
+            {[...Array(12)].map((_, i) => (
+              <div key={i} style={{
+                position: "absolute",
+                width: 4 + (i % 3) * 2,
+                height: 4 + (i % 3) * 2,
+                borderRadius: "50%",
+                background: i % 2 === 0 
+                  ? `rgba(239,68,68,${0.15 + (i % 3) * 0.1})` 
+                  : `rgba(249,115,22,${0.1 + (i % 3) * 0.1})`,
+                left: `${10 + (i * 7)}%`,
+                top: `${15 + (i * 6)}%`,
+                animation: `particleFloat ${3 + (i % 3)}s ease-in-out infinite`,
+                animationDelay: `${i * 0.2}s`,
+                boxShadow: i % 2 === 0 
+                  ? "0 0 15px rgba(239,68,68,0.4)" 
+                  : "0 0 12px rgba(249,115,22,0.3)",
+              }} />
+            ))}
+          </div>
+
+          {/* Radial Glow Behind Logo */}
+          <div style={{
+            position: "absolute",
+            top: "30%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 300,
+            height: 300,
+            borderRadius: "50%",
+            background: `radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%)`,
+            animation: "pulseRing 3s ease-in-out infinite",
+            pointerEvents: "none",
+          }} />
+
           <div style={{ 
             display: "flex", 
             flexDirection: "column", 
             alignItems: "center", 
             justifyContent: "center",
-            minHeight: "60vh",
-            gap: 24,
-            animation: "fadeIn 0.5s ease",
+            minHeight: "70vh",
+            gap: 32,
+            position: "relative",
+            zIndex: 1,
           }}>
-            {/* Animated Logo */}
+            {/* Premium Logo Container with Glow Ring */}
             <div style={{
-              width: 100,
-              height: 100,
-              borderRadius: 24,
-              background: `linear-gradient(135deg, ${BRAND.primary}15, ${BRAND.secondary}15)`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: `0 16px 48px ${BRAND.primaryGlow}`,
-              animation: "float 2s ease-in-out infinite",
-              padding: 12,
-              border: `1px solid ${BRAND.primary}30`,
+              position: "relative",
+              animation: "logoReveal 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
             }}>
-              <img 
-                src="/logo.png" 
-                alt="Ace Fixings" 
-                style={{ 
-                  width: "100%", 
-                  height: "100%", 
-                  objectFit: "contain",
-                  filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.4))",
-                }}
-              />
+              {/* Outer Glow Ring */}
+              <div style={{
+                position: "absolute",
+                top: -12,
+                left: -12,
+                right: -12,
+                bottom: -12,
+                borderRadius: 36,
+                border: "2px solid rgba(239,68,68,0.2)",
+                animation: "borderGlow 2s ease-in-out infinite",
+              }} />
+              
+              {/* Inner Container */}
+              <div style={{
+                width: 120,
+                height: 120,
+                borderRadius: 28,
+                background: `linear-gradient(145deg, rgba(239,68,68,0.12), rgba(249,115,22,0.08))`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: `
+                  0 24px 64px rgba(239,68,68,0.25),
+                  0 0 100px rgba(239,68,68,0.15),
+                  inset 0 1px 1px rgba(255,255,255,0.1)
+                `,
+                padding: 18,
+                border: `1px solid rgba(239,68,68,0.25)`,
+                position: "relative",
+                overflow: "hidden",
+              }}>
+                {/* Shine Effect */}
+                <div style={{
+                  position: "absolute",
+                  top: 0,
+                  left: "-100%",
+                  width: "60%",
+                  height: "100%",
+                  background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
+                  animation: "shine 2.5s ease-in-out infinite",
+                  animationDelay: "0.5s",
+                }} />
+                
+                <img 
+                  src="/logo.png" 
+                  alt="Ace Fixings" 
+                  style={{ 
+                    width: "100%", 
+                    height: "100%", 
+                    objectFit: "contain",
+                    filter: "drop-shadow(0 8px 16px rgba(0,0,0,0.5))",
+                    animation: "float 3s ease-in-out infinite",
+                  }}
+                />
+              </div>
             </div>
             
-            <div style={{ textAlign: "center" }}>
+            {/* Brand Name with Premium Typography */}
+            <div style={{ 
+              textAlign: "center",
+              animation: "textReveal 0.8s ease-out forwards",
+              animationDelay: "0.3s",
+              opacity: 0,
+            }}>
               <div style={{
-                fontSize: 24,
+                fontSize: 32,
                 fontWeight: 800,
-                background: `linear-gradient(135deg, #fff 0%, ${BRAND.mutedLight} 100%)`,
+                letterSpacing: "-0.02em",
+                background: `linear-gradient(135deg, #ffffff 0%, ${BRAND.mutedLight} 50%, ${BRAND.primary}50 100%)`,
+                backgroundSize: "200% 200%",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
-                marginBottom: 8,
+                marginBottom: 12,
+                animation: "gradientShift 4s ease infinite",
+                textShadow: "0 0 40px rgba(239,68,68,0.3)",
               }}>
                 {BRAND.name}
               </div>
-              <div style={{ fontSize: 14, color: BRAND.muted }}>
-                Loading your experience...
+              <div style={{ 
+                fontSize: 13, 
+                color: BRAND.muted,
+                fontWeight: 500,
+                letterSpacing: "0.15em",
+                textTransform: "uppercase",
+                opacity: 0.7,
+              }}>
+                Premium Fixings & Hardware
               </div>
             </div>
             
-            {/* Loading spinner */}
+            {/* Premium Loading Indicator */}
             <div style={{
-              width: 32,
-              height: 32,
-              border: "3px solid rgba(255,255,255,0.1)",
-              borderTopColor: BRAND.primary,
-              borderRadius: "50%",
-              animation: "spin 0.8s linear infinite",
-            }} />
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 16,
+              animation: "slideInUp 0.6s ease-out forwards",
+              animationDelay: "0.6s",
+              opacity: 0,
+            }}>
+              {/* Spinner with Glow */}
+              <div style={{ position: "relative" }}>
+                <div style={{
+                  position: "absolute",
+                  top: -4,
+                  left: -4,
+                  right: -4,
+                  bottom: -4,
+                  borderRadius: "50%",
+                  background: "radial-gradient(circle, rgba(239,68,68,0.2), transparent 70%)",
+                  animation: "pulse 1.5s ease-in-out infinite",
+                }} />
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  border: "3px solid rgba(255,255,255,0.05)",
+                  borderTopColor: BRAND.primary,
+                  borderRightColor: "rgba(249,115,22,0.6)",
+                  borderRadius: "50%",
+                  animation: "spin 0.8s linear infinite",
+                  boxShadow: "0 0 20px rgba(239,68,68,0.3)",
+                }} />
+              </div>
+              
+              <div style={{ 
+                fontSize: 13, 
+                color: BRAND.muted,
+                fontWeight: 500,
+                letterSpacing: "0.05em",
+              }}>
+                Loading your experience...
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2919,46 +3204,77 @@ export default function App() {
       <style>{GLOBAL_CSS}</style>
 
       <div style={shell}>
-        <div style={topbar}>
+        <div style={{
+          ...topbar,
+          background: "linear-gradient(180deg, rgba(15,15,15,0.98) 0%, rgba(10,10,10,0.95) 100%)",
+          backdropFilter: "blur(24px)",
+          WebkitBackdropFilter: "blur(24px)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.4), 0 0 1px rgba(255,255,255,0.1) inset",
+        }}>
           {/* Header Row */}
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", marginBottom: 12 }}>
-            {/* Logo */}
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 14 }}>
+            {/* Premium Logo with Glow */}
             <div style={{
-              width: 44,
-              height: 44,
-              borderRadius: 10,
+              width: 48,
+              height: 48,
+              borderRadius: 14,
               overflow: "hidden",
               flexShrink: 0,
-              boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+              background: "linear-gradient(135deg, rgba(239,68,68,0.15), rgba(249,115,22,0.1))",
+              border: "1px solid rgba(239,68,68,0.25)",
+              boxShadow: "0 8px 24px rgba(239,68,68,0.2), 0 0 1px rgba(255,255,255,0.1) inset",
+              padding: 4,
+              position: "relative",
             }}>
+              <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: "50%",
+                background: "linear-gradient(180deg, rgba(255,255,255,0.1), transparent)",
+                borderRadius: "14px 14px 0 0",
+                pointerEvents: "none",
+              }} />
               <img 
                 src="/logo.png" 
                 alt="Ace Fixings" 
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                style={{ 
+                  width: "100%", 
+                  height: "100%", 
+                  objectFit: "contain",
+                  filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+                }}
               />
             </div>
             
             <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
               <div style={{ 
-                fontSize: 18, 
+                fontSize: 19, 
                 fontWeight: 800, 
                 letterSpacing: "-0.02em",
-                background: `linear-gradient(135deg, #fff 0%, ${BRAND.mutedLight} 100%)`,
+                background: `linear-gradient(135deg, #ffffff 0%, #e0e0e0 50%, ${BRAND.primary}80 100%)`,
+                backgroundSize: "200% 200%",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
+                animation: "gradientShift 6s ease infinite",
               }}>
                 {BRAND.name}
               </div>
               <div style={{ 
                 fontSize: 10, 
-                color: BRAND.primary, 
-                marginTop: 2,
+                marginTop: 3,
                 fontWeight: 700,
-                letterSpacing: "0.05em",
+                letterSpacing: "0.08em",
                 textTransform: "uppercase",
+                background: `linear-gradient(90deg, ${BRAND.primary}, ${BRAND.secondary})`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
               }}>
-                {userLine ? `✓ ${userLine}` : "Deal Me An Ace"}
+                Deal Me An Ace
               </div>
             </div>
 
@@ -2967,16 +3283,16 @@ export default function App() {
             </div>
           </div>
 
-          {/* Search Row */}
+          {/* Premium Search Row */}
           <div className="search-row" style={searchRow}>
             <div style={{ position: "relative", width: "100%", minWidth: 0 }}>
               <span style={{ 
                 position: "absolute", 
-                left: 14, 
+                left: 16, 
                 top: "50%", 
                 transform: "translateY(-50%)", 
-                fontSize: 14,
-                opacity: 0.4,
+                fontSize: 15,
+                opacity: 0.35,
                 pointerEvents: "none",
               }}>
                 🔍
@@ -2987,14 +3303,18 @@ export default function App() {
                 placeholder={view === "home" ? "Search collections…" : "Search products…"}
                 className="premium-input"
                 style={{
-                  paddingLeft: 40,
-                  paddingRight: 14,
-                  height: 48,
+                  paddingLeft: 44,
+                  paddingRight: 16,
+                  height: 50,
+                  background: "rgba(255,255,255,0.04)",
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.03)",
                 }}
               />
             </div>
             <Button
-              className="top-cart-btn"
+              className="top-cart-btn btn-glow"
               variant="dark"
               size="sm"
               onClick={async () => {
@@ -3007,17 +3327,23 @@ export default function App() {
               }}
               title="Open cart"
               style={{ 
-                height: 48, 
-                minWidth: 90, 
+                height: 50, 
+                minWidth: 95, 
                 justifyContent: "center", 
                 gap: 8,
+                borderRadius: 16,
                 background: cartCount > 0 
                   ? `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`
                   : "rgba(255,255,255,0.05)",
-                boxShadow: cartCount > 0 ? `0 4px 16px ${BRAND.primaryGlow}` : "none",
+                boxShadow: cartCount > 0 
+                  ? `0 8px 24px ${BRAND.primaryGlow}, 0 0 1px rgba(255,255,255,0.2) inset` 
+                  : "0 4px 12px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.03)",
+                border: cartCount > 0 
+                  ? "1px solid rgba(255,255,255,0.1)" 
+                  : "1px solid rgba(255,255,255,0.06)",
               }}
             >
-              <span style={{ fontWeight: 700, fontSize: 13 }}>🛒</span>
+              <span style={{ fontWeight: 700, fontSize: 14 }}>🛒</span>
               <Badge variant={cartCount > 0 ? "primary" : "default"}>{cartCount}</Badge>
             </Button>
           </div>
@@ -3025,35 +3351,37 @@ export default function App() {
           {error ? (
             <div
               style={{
-                marginTop: 12,
-                background: "rgba(220,38,38,0.1)",
+                marginTop: 14,
+                background: "linear-gradient(135deg, rgba(220,38,38,0.12), rgba(220,38,38,0.08))",
                 border: "1px solid rgba(220,38,38,0.3)",
                 color: "#fca5a5",
-                padding: 12,
-                borderRadius: 14,
-                animation: "scaleIn 0.2s ease",
+                padding: 14,
+                borderRadius: 16,
+                animation: "scaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                boxShadow: "0 4px 20px rgba(220,38,38,0.15)",
               }}
             >
-              <div style={{ fontWeight: 700, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ fontWeight: 700, marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
                 ⚠️ Error
               </div>
-              <div style={{ fontSize: 13, opacity: 0.9, lineHeight: 1.4 }}>{error}</div>
+              <div style={{ fontSize: 13, opacity: 0.9, lineHeight: 1.5 }}>{error}</div>
             </div>
           ) : null}
 
           {!isNative ? (
             <div
               style={{
-                marginTop: 12,
-                background: "rgba(59,130,246,0.1)",
-                border: "1px solid rgba(59,130,246,0.2)",
+                marginTop: 14,
+                background: "linear-gradient(135deg, rgba(59,130,246,0.1), rgba(99,102,241,0.08))",
+                border: "1px solid rgba(59,130,246,0.25)",
                 color: "#93c5fd",
-                padding: 10,
-                borderRadius: 14,
+                padding: 12,
+                borderRadius: 16,
+                boxShadow: "0 4px 16px rgba(59,130,246,0.1)",
               }}
             >
-              <div style={{ fontWeight: 900 }}>Web preview mode</div>
-              <div style={{ fontSize: 13, opacity: 0.95 }}>
+              <div style={{ fontWeight: 800, fontSize: 13 }}>Web preview mode</div>
+              <div style={{ fontSize: 12, opacity: 0.9, marginTop: 4, lineHeight: 1.4 }}>
                 Browsing/cart works here. Login/Orders require the Android app because Shopify Customer Accounts blocks localhost CORS.
               </div>
             </div>
@@ -3170,47 +3498,97 @@ export default function App() {
                   {filteredCollections.map((c, idx) => (
                     <div
                       key={c.id}
+                      className="card-hover"
                       style={{
                         ...card,
                         cursor: "pointer",
-                        animation: `cardSlideIn 0.4s ease ${idx * 40}ms backwards`,
-                        transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                        animation: `cardSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${idx * 50}ms backwards`,
+                        transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                        background: "linear-gradient(145deg, rgba(20,20,20,0.9), rgba(10,10,10,0.95))",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        boxShadow: "0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)",
                       }}
                       onClick={() => openCollection(c)}
-                      onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
+                      onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.96)")}
                       onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
                       onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                       role="button"
                     >
                       <div
                         style={{
-                          height: 120,
-                          borderRadius: 16,
-                          background: "#0b0b0b",
-                          border: "1px solid #1f1f1f",
+                          height: 130,
+                          borderRadius: 18,
+                          background: "linear-gradient(135deg, #080808, #0c0c0c)",
+                          border: "1px solid rgba(255,255,255,0.05)",
                           overflow: "hidden",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           position: "relative",
+                          boxShadow: "inset 0 2px 4px rgba(0,0,0,0.3)",
                         }}
                       >
                         {c.imageUrl && (
-                          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(135deg, transparent 0%, rgba(0,0,0,0.3) 100%)", zIndex: 1 }} />
+                          <div style={{ 
+                            position: "absolute", 
+                            inset: 0, 
+                            background: "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.5) 70%, rgba(0,0,0,0.7) 100%)", 
+                            zIndex: 1,
+                          }} />
                         )}
                         {c.imageUrl ? (
-                          <img src={c.imageUrl} alt={c.imageAlt} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          <img src={c.imageUrl} alt={c.imageAlt} style={{ 
+                            width: "100%", 
+                            height: "100%", 
+                            objectFit: "cover",
+                            transition: "transform 0.4s ease",
+                          }} />
                         ) : (
-                          <div style={{ color: BRAND.muted, fontWeight: 900 }}>📦</div>
+                          <div style={{ 
+                            color: BRAND.muted, 
+                            fontWeight: 900, 
+                            fontSize: 32,
+                            opacity: 0.5,
+                          }}>📦</div>
                         )}
+                        {/* Premium shine overlay */}
+                        <div style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: "40%",
+                          background: "linear-gradient(180deg, rgba(255,255,255,0.06), transparent)",
+                          zIndex: 2,
+                          pointerEvents: "none",
+                        }} />
                       </div>
 
-                      <div style={{ height: 10 }} />
-                      <div style={{ fontWeight: 1000 }}>{c.title}</div>
-                      <div style={{ fontSize: 12, color: BRAND.muted, marginTop: 6 }}>{c.handle}</div>
-
                       <div style={{ height: 12 }} />
-                      <Button variant="dark" onClick={(e) => { e.stopPropagation(); openCollection(c); }} style={{ width: "100%", fontSize: 12 }} icon="→">
+                      <div style={{ 
+                        fontWeight: 800, 
+                        fontSize: 15,
+                        background: "linear-gradient(135deg, #ffffff, rgba(255,255,255,0.85))",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                      }}>{c.title}</div>
+                      <div style={{ 
+                        fontSize: 11, 
+                        color: BRAND.muted, 
+                        marginTop: 6,
+                        fontWeight: 600,
+                        letterSpacing: "0.02em",
+                      }}>{c.handle}</div>
+
+                      <div style={{ height: 14 }} />
+                      <Button variant="dark" onClick={(e) => { e.stopPropagation(); openCollection(c); }} style={{ 
+                        width: "100%", 
+                        fontSize: 12,
+                        background: "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04))",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                      }} icon="→">
                         Browse
                       </Button>
                     </div>
@@ -4327,29 +4705,30 @@ export default function App() {
               position: "fixed",
               left: 16,
               right: 16,
-              bottom: "calc(76px + env(safe-area-inset-bottom))",
+              bottom: "calc(84px + env(safe-area-inset-bottom))",
               display: "flex",
               justifyContent: "center",
               pointerEvents: "none",
               zIndex: 20000,
-              animation: "slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              animation: "slideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
             }}
           >
             <div
               style={{
                 pointerEvents: "none",
-                background: BRAND.glassHeavy,
-                backdropFilter: "blur(20px)",
-                WebkitBackdropFilter: "blur(20px)",
-                border: `1px solid ${BRAND.glassBorder}`,
-                padding: "12px 20px",
-                borderRadius: 16,
+                background: "linear-gradient(135deg, rgba(20,20,20,0.95), rgba(15,15,15,0.98))",
+                backdropFilter: "blur(24px) saturate(180%)",
+                WebkitBackdropFilter: "blur(24px) saturate(180%)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                padding: "14px 24px",
+                borderRadius: 18,
                 color: "#fff",
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: 14,
-                boxShadow: BRAND.shadowLg,
+                boxShadow: "0 12px 40px rgba(0,0,0,0.5), 0 0 1px rgba(255,255,255,0.1) inset, 0 0 60px rgba(239,68,68,0.1)",
                 maxWidth: "90%",
                 textAlign: "center",
+                letterSpacing: "0.02em",
               }}
             >
               {toast}
