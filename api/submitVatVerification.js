@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const shopDomain = process.env.SHOP_DOMAIN || "acefixings.com";
+    const shopDomain = process.env.SHOPIFY_DOMAIN || process.env.SHOP_DOMAIN || "acefixings.myshopify.com";
     const adminToken = process.env.SHOPIFY_ADMIN_API_TOKEN;
     const apiVersion = process.env.SHOPIFY_API_VERSION || "2025-07";
 
