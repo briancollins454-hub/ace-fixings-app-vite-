@@ -92,7 +92,7 @@ export default async function handler(req, res) {
           {
             ownerId: customerId,
             namespace: "custom",
-            key: "tax_vat_number",
+            key: "vat_number",
             type: "single_line_text_field",
             value: vatNumber,
           },
