@@ -4612,6 +4612,47 @@ export default function App() {
                   Login is disabled on localhost (browser CORS). Build/run in Android to test login + orders.
                 </div>
               ) : null}
+
+              {/* Privacy Policy Link */}
+              <div style={{ 
+                marginTop: 20, 
+                paddingTop: 16, 
+                borderTop: "1px solid rgba(255,255,255,0.06)",
+                textAlign: "center",
+              }}>
+                <a 
+                  href="https://briancollins454-hub-ace-fixings-app-vite-moxxikv4u.vercel.app/privacy-policy.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    fontSize: 13,
+                    color: BRAND.muted,
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "10px 16px",
+                    borderRadius: 10,
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                    e.currentTarget.style.color = "#fff";
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.03)";
+                    e.currentTarget.style.color = BRAND.muted;
+                  }}
+                >
+                  <span>🔒</span>
+                  Privacy Policy
+                </a>
+                <div style={{ fontSize: 11, color: BRAND.muted, marginTop: 10, opacity: 0.7 }}>
+                  Ace Fixings Ltd © {new Date().getFullYear()}
+                </div>
+              </div>
             </div>
           )}
         </div>
