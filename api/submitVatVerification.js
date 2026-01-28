@@ -91,21 +91,21 @@ export default async function handler(req, res) {
         metafields: [
           {
             ownerId: customerId,
-            namespace: "acefixings",
+            namespace: "custom",
             key: "tax_vat_number",
             type: "single_line_text_field",
             value: vatNumber,
           },
           {
             ownerId: customerId,
-            namespace: "acefixings",
+            namespace: "custom",
             key: "business_name",
             type: "single_line_text_field",
             value: businessName,
           },
           {
             ownerId: customerId,
-            namespace: "acefixings",
+            namespace: "custom",
             key: "business_country",
             type: "single_line_text_field",
             value: country,
@@ -113,6 +113,8 @@ export default async function handler(req, res) {
         ],
       }
     );
+    
+    console.log(`[VAT] Metafield response:`, JSON.stringify(metafieldResponse));
 
     if (metafieldResponse?.errors) {
       console.error("Metafield errors:", metafieldResponse.errors);
