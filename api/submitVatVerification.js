@@ -67,8 +67,8 @@ export default async function handler(req, res) {
 
     // Step 2: Update customer metafield with VAT number
     const updateMetafieldMutation = `
-      mutation UpdateCustomerMetafield($customerId: ID!, $metafields: [MetafieldsSetInput!]!) {
-        metafieldsSet(ownerId: $customerId, metafields: $metafields) {
+      mutation UpdateCustomerMetafield($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) {
           userErrors {
             field
             message
@@ -88,21 +88,23 @@ export default async function handler(req, res) {
       apiVersion,
       updateMetafieldMutation,
       {
-        customerId: customerId,
         metafields: [
           {
+            ownerId: customerId,
             namespace: "acefixings",
             key: "tax_vat_number",
             type: "single_line_text_field",
             value: vatNumber,
           },
           {
+            ownerId: customerId,
             namespace: "acefixings",
             key: "business_name",
             type: "single_line_text_field",
             value: businessName,
           },
           {
+            ownerId: customerId,
             namespace: "acefixings",
             key: "business_country",
             type: "single_line_text_field",
