@@ -33,11 +33,33 @@ const { useEffect, useMemo, useRef, useState } = React;
 const BRAND = {
   name: "Ace Fixings",
   domain: "acefixings.com",
+  // Premium color palette
   primary: "#ef4444",
-  bg: "#0a0a0a",
-  card: "#111111",
+  primaryGlow: "rgba(239, 68, 68, 0.4)",
+  secondary: "#f97316",
+  accent: "#8b5cf6",
+  success: "#22c55e",
+  warning: "#eab308",
+  // Dark theme with depth
+  bg: "#050505",
+  bgGradient: "linear-gradient(180deg, #0a0a0a 0%, #050505 100%)",
+  card: "#0d0d0d",
+  cardHover: "#121212",
+  cardBorder: "rgba(255,255,255,0.06)",
+  // Glass effect
+  glass: "rgba(15, 15, 15, 0.85)",
+  glassBorder: "rgba(255,255,255,0.08)",
+  glassHeavy: "rgba(10, 10, 10, 0.95)",
+  // Typography
   text: "#ffffff",
-  muted: "#a3a3a3",
+  textSecondary: "#e5e5e5",
+  muted: "#737373",
+  mutedLight: "#a3a3a3",
+  // Shadows
+  shadowSm: "0 2px 8px rgba(0,0,0,0.4)",
+  shadowMd: "0 8px 24px rgba(0,0,0,0.5)",
+  shadowLg: "0 16px 48px rgba(0,0,0,0.6)",
+  shadowGlow: "0 0 30px rgba(239,68,68,0.3)",
 };
 
 // ==========================
@@ -286,20 +308,24 @@ const K = {
 // ==========================
 // UI COMPONENTS
 // ==========================
-function Button({ children, onClick, disabled, style, variant = "primary", title, className, type = "button", loading = false, icon }) {
+function Button({ children, onClick, disabled, style, variant = "primary", title, className, type = "button", loading = false, icon, size = "md" }) {
+  const sizes = {
+    sm: { padding: "10px 14px", fontSize: 13, borderRadius: 12, gap: 6 },
+    md: { padding: "14px 18px", fontSize: 14, borderRadius: 16, gap: 8 },
+    lg: { padding: "16px 24px", fontSize: 15, borderRadius: 18, gap: 10 },
+  };
   const base = {
     border: "none",
-    padding: "12px 14px",
-    borderRadius: 14,
-    fontWeight: 700,
+    ...sizes[size],
+    fontWeight: 600,
+    letterSpacing: "0.01em",
     cursor: disabled || loading ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.55 : 1,
-    transition: "all 0.12s cubic-bezier(0.34, 1.56, 0.64, 1)",
+    opacity: disabled ? 0.5 : 1,
+    transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
     userSelect: "none",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
     whiteSpace: "nowrap",
     maxWidth: "100%",
     position: "relative",
@@ -307,13 +333,35 @@ function Button({ children, onClick, disabled, style, variant = "primary", title
   };
   const variants = {
     primary: { 
-      background: `linear-gradient(135deg, ${BRAND.primary}, #ff6b6b)`,
+      background: `linear-gradient(135deg, ${BRAND.primary} 0%, #ff6b6b 50%, ${BRAND.secondary} 100%)`,
       backgroundSize: "200% 200%",
+      animation: "gradientShift 3s ease infinite",
       color: "#fff",
-      boxShadow: "0 4px 12px rgba(239,68,68,0.25)",
+      boxShadow: `0 4px 20px ${BRAND.primaryGlow}`,
+      textShadow: "0 1px 2px rgba(0,0,0,0.2)",
     },
-    ghost: { background: "transparent", color: "#fff", border: "1px solid #333" },
-    dark: { background: "#1c1c1c", color: "#fff", border: "1px solid #2a2a2a" },
+    ghost: { 
+      background: "rgba(255,255,255,0.03)", 
+      backdropFilter: "blur(10px)",
+      WebkitBackdropFilter: "blur(10px)",
+      color: "#fff", 
+      border: "1px solid rgba(255,255,255,0.08)",
+    },
+    dark: { 
+      background: "rgba(255,255,255,0.05)", 
+      color: "#fff", 
+      border: "1px solid rgba(255,255,255,0.1)",
+    },
+    success: {
+      background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+      color: "#fff",
+      boxShadow: "0 4px 20px rgba(34,197,94,0.3)",
+    },
+    accent: {
+      background: `linear-gradient(135deg, ${BRAND.accent} 0%, #a78bfa 100%)`,
+      color: "#fff",
+      boxShadow: "0 4px 20px rgba(139,92,246,0.3)",
+    },
   };
   return (
     <button
@@ -323,19 +371,31 @@ function Button({ children, onClick, disabled, style, variant = "primary", title
       onClick={disabled || loading ? undefined : onClick}
       style={{ ...base, ...variants[variant], ...style }}
       onMouseDown={(e) => {
-        if (!disabled && !loading) e.currentTarget.style.transform = "scale(0.98)";
+        if (!disabled && !loading) e.currentTarget.style.transform = "scale(0.96)";
       }}
       onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
       onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+      onTouchStart={(e) => {
+        if (!disabled && !loading) e.currentTarget.style.transform = "scale(0.96)";
+      }}
+      onTouchEnd={(e) => (e.currentTarget.style.transform = "scale(1)")}
     >
       {loading ? (
         <>
-          <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+          <span style={{ 
+            display: "inline-block", 
+            width: 16, 
+            height: 16, 
+            border: "2px solid rgba(255,255,255,0.2)", 
+            borderTopColor: "#fff", 
+            borderRadius: "50%", 
+            animation: "spin 0.7s linear infinite" 
+          }} />
           {children}
         </>
       ) : (
         <>
-          {icon && <span>{icon}</span>}
+          {icon && <span style={{ fontSize: "1.1em" }}>{icon}</span>}
           {children}
         </>
       )}
@@ -349,15 +409,19 @@ function Pill({ label, active, onClick }) {
       type="button"
       onClick={onClick}
       style={{
-        background: active ? BRAND.primary : "#181818",
-        color: "#fff",
-        border: "1px solid #2a2a2a",
-        padding: "8px 10px",
+        background: active 
+          ? `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`
+          : "rgba(255,255,255,0.03)",
+        color: active ? "#fff" : BRAND.mutedLight,
+        border: active ? "none" : "1px solid rgba(255,255,255,0.06)",
+        padding: "10px 14px",
         borderRadius: 999,
-        fontSize: 12,
-        fontWeight: 800,
+        fontSize: 13,
+        fontWeight: 600,
         cursor: "pointer",
         whiteSpace: "nowrap",
+        transition: "all 0.2s ease",
+        boxShadow: active ? `0 4px 15px ${BRAND.primaryGlow}` : "none",
       }}
     >
       {label}
@@ -365,38 +429,54 @@ function Pill({ label, active, onClick }) {
   );
 }
 
-function Skeleton({ h = 16, w = "100%", r = 12, style }) {
+function Skeleton({ h = 16, w = "100%", r = 16, style }) {
   return (
     <div
       style={{
         height: h,
         width: w,
         borderRadius: r,
-        background: "linear-gradient(90deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%)",
+        background: "linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%)",
         backgroundSize: "200% 100%",
-        animation: "shimmer 2s infinite",
+        animation: "shimmer 1.8s ease-in-out infinite",
         ...style,
       }}
     />
   );
 }
 
-function Badge({ children }) {
+function Badge({ children, variant = "default" }) {
+  const variants = {
+    default: {
+      background: "rgba(255,255,255,0.08)",
+      border: "1px solid rgba(255,255,255,0.12)",
+      color: "#fff",
+    },
+    primary: {
+      background: `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`,
+      border: "none",
+      color: "#fff",
+    },
+    success: {
+      background: "rgba(34,197,94,0.15)",
+      border: "1px solid rgba(34,197,94,0.3)",
+      color: "#4ade80",
+    },
+  };
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        minWidth: 22,
-        height: 22,
-        padding: "0 8px",
+        minWidth: 20,
+        height: 20,
+        padding: "0 7px",
         borderRadius: 999,
-        background: "rgba(255,255,255,0.10)",
-        border: "1px solid rgba(255,255,255,0.14)",
-        fontSize: 12,
-        fontWeight: 1000,
+        fontSize: 11,
+        fontWeight: 700,
         lineHeight: 1,
+        ...variants[variant],
       }}
     >
       {children}
@@ -410,16 +490,17 @@ function StockBadge({ available, quantity }) {
       <span style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 4,
-        padding: "4px 8px",
-        borderRadius: 8,
-        background: "rgba(220,38,38,0.15)",
-        border: "1px solid rgba(220,38,38,0.4)",
+        gap: 5,
+        padding: "6px 10px",
+        borderRadius: 10,
+        background: "rgba(220,38,38,0.1)",
+        border: "1px solid rgba(220,38,38,0.2)",
         fontSize: 11,
-        fontWeight: 900,
-        color: "#ff9999",
+        fontWeight: 600,
+        color: "#f87171",
       }}>
-        ✕ Out of Stock
+        <span style={{ fontSize: 8 }}>●</span>
+        Out of Stock
       </span>
     );
   }
@@ -428,16 +509,17 @@ function StockBadge({ available, quantity }) {
     <span style={{
       display: "inline-flex",
       alignItems: "center",
-      gap: 4,
-      padding: "4px 8px",
-      borderRadius: 8,
-      background: isLow ? "rgba(251,146,60,0.15)" : "rgba(34,197,94,0.15)",
-      border: isLow ? "1px solid rgba(251,146,60,0.4)" : "1px solid rgba(34,197,94,0.4)",
+      gap: 5,
+      padding: "6px 10px",
+      borderRadius: 10,
+      background: isLow ? "rgba(251,146,60,0.1)" : "rgba(34,197,94,0.1)",
+      border: isLow ? "1px solid rgba(251,146,60,0.2)" : "1px solid rgba(34,197,94,0.2)",
       fontSize: 11,
-      fontWeight: 900,
-      color: isLow ? "#ffb366" : "#66ff66",
+      fontWeight: 600,
+      color: isLow ? "#fb923c" : "#4ade80",
     }}>
-      {isLow ? "⚠ Low Stock" : "✓ In Stock"}
+      <span style={{ fontSize: 8, animation: isLow ? "pulse 2s infinite" : "none" }}>●</span>
+      {isLow ? "Low Stock" : "In Stock"}
     </span>
   );
 }
@@ -451,37 +533,48 @@ function SavingsIndicator({ compareAtPrice, price }) {
       display: "inline-flex",
       alignItems: "center",
       gap: 4,
-      padding: "4px 8px",
-      borderRadius: 8,
-      background: "linear-gradient(135deg, rgba(251,146,60,0.2), rgba(239,68,68,0.2))",
-      border: "1px solid rgba(251,146,60,0.4)",
+      padding: "6px 10px",
+      borderRadius: 10,
+      background: `linear-gradient(135deg, rgba(251,146,60,0.15), rgba(239,68,68,0.15))`,
+      border: "1px solid rgba(251,146,60,0.25)",
       fontSize: 11,
-      fontWeight: 900,
-      color: "#ffa366",
+      fontWeight: 700,
+      color: "#fb923c",
     }}>
-      Save {percent}%
+      🔥 Save {percent}%
     </span>
   );
 }
 
 function VatToggle({ mode, onChange }) {
   return (
-    <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+    <div style={{ 
+      display: "flex", 
+      gap: 2, 
+      alignItems: "center",
+      background: "rgba(255,255,255,0.03)",
+      padding: 3,
+      borderRadius: 12,
+      border: "1px solid rgba(255,255,255,0.06)",
+    }}>
       <button
         type="button"
         onClick={() => onChange("inc")}
         style={{
           flex: 1,
           padding: "8px 12px",
-          borderRadius: 12,
-          background: mode === "inc" ? BRAND.primary : "#1a1a1a",
-          border: `1px solid ${mode === "inc" ? "transparent" : "#333"}`,
-          color: "#fff",
-          fontWeight: 900,
+          borderRadius: 10,
+          background: mode === "inc" 
+            ? `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`
+            : "transparent",
+          border: "none",
+          color: mode === "inc" ? "#fff" : BRAND.muted,
+          fontWeight: 600,
           fontSize: 12,
           cursor: "pointer",
-          transition: "all 0.2s",
-          boxShadow: mode === "inc" ? "0 2px 8px rgba(239,68,68,0.2)" : "none",
+          transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          boxShadow: mode === "inc" ? `0 4px 12px ${BRAND.primaryGlow}` : "none",
+          whiteSpace: "nowrap",
         }}
       >
         Inc VAT
@@ -492,15 +585,18 @@ function VatToggle({ mode, onChange }) {
         style={{
           flex: 1,
           padding: "8px 12px",
-          borderRadius: 12,
-          background: mode === "ex" ? BRAND.primary : "#1a1a1a",
-          border: `1px solid ${mode === "ex" ? "transparent" : "#333"}`,
-          color: "#fff",
-          fontWeight: 900,
+          borderRadius: 10,
+          background: mode === "ex" 
+            ? `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`
+            : "transparent",
+          border: "none",
+          color: mode === "ex" ? "#fff" : BRAND.muted,
+          fontWeight: 600,
           fontSize: 12,
           cursor: "pointer",
-          transition: "all 0.2s",
-          boxShadow: mode === "ex" ? "0 2px 8px rgba(239,68,68,0.2)" : "none",
+          transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          boxShadow: mode === "ex" ? `0 4px 12px ${BRAND.primaryGlow}` : "none",
+          whiteSpace: "nowrap",
         }}
       >
         Ex VAT
@@ -2414,6 +2510,7 @@ export default function App() {
   const layout = {
     minHeight: "100vh",
     background: BRAND.bg,
+    backgroundImage: "radial-gradient(ellipse at top center, rgba(239,68,68,0.04) 0%, transparent 60%)",
     color: BRAND.text,
     display: "flex",
     justifyContent: "center",
@@ -2422,36 +2519,43 @@ export default function App() {
 
   const shell = {
     width: "100%",
-    maxWidth: 1100,
-    paddingTop: 16,
-    paddingBottom: "calc(96px + env(safe-area-inset-bottom))",
-    paddingLeft: "calc(16px + env(safe-area-inset-left))",
-    paddingRight: "calc(16px + env(safe-area-inset-right))",
+    maxWidth: 800,
+    paddingTop: 12,
+    paddingBottom: "calc(80px + env(safe-area-inset-bottom))",
+    paddingLeft: "calc(12px + env(safe-area-inset-left))",
+    paddingRight: "calc(12px + env(safe-area-inset-right))",
     overflowX: "hidden",
   };
 
   const topbar = {
     position: "sticky",
     top: 0,
-    zIndex: 5,
-    background: "rgba(10,10,10,0.9)",
-    backdropFilter: "blur(10px)",
-    borderBottom: "1px solid #1f1f1f",
-    padding: "12px 0",
-    marginBottom: 12,
+    zIndex: 100,
+    background: BRAND.glassHeavy,
+    backdropFilter: "blur(20px) saturate(180%)",
+    WebkitBackdropFilter: "blur(20px) saturate(180%)",
+    borderBottom: `1px solid ${BRAND.glassBorder}`,
+    padding: "14px 0",
+    marginBottom: 16,
+    marginLeft: -12,
+    marginRight: -12,
+    paddingLeft: 12,
+    paddingRight: 12,
   };
 
   const card = {
-    background: BRAND.card,
-    border: "1px solid #202020",
-    borderRadius: 18,
-    padding: 14,
-    boxShadow: "0 8px 22px rgba(0,0,0,0.35)",
+    background: "rgba(255,255,255,0.02)",
+    border: `1px solid ${BRAND.cardBorder}`,
+    borderRadius: 20,
+    padding: 16,
+    boxShadow: BRAND.shadowMd,
+    backdropFilter: "blur(10px)",
+    WebkitBackdropFilter: "blur(10px)",
   };
 
   const grid = {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
     gap: 12,
   };
 
@@ -2469,12 +2573,14 @@ export default function App() {
     right: 0,
     bottom: 0,
     zIndex: 9999,
-    background: "rgba(10,10,10,0.92)",
-    borderTop: "1px solid #1f1f1f",
-    paddingTop: 12,
-    paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
-    paddingLeft: "calc(12px + env(safe-area-inset-left))",
-    paddingRight: "calc(12px + env(safe-area-inset-right))",
+    background: BRAND.glassHeavy,
+    backdropFilter: "blur(20px) saturate(180%)",
+    WebkitBackdropFilter: "blur(20px) saturate(180%)",
+    borderTop: `1px solid ${BRAND.glassBorder}`,
+    paddingTop: 8,
+    paddingBottom: "calc(8px + env(safe-area-inset-bottom))",
+    paddingLeft: "calc(6px + env(safe-area-inset-left))",
+    paddingRight: "calc(6px + env(safe-area-inset-right))",
     display: "flex",
     justifyContent: "center",
     transform: "translateZ(0)",
@@ -2484,32 +2590,38 @@ export default function App() {
 
   const navInner = {
     width: "100%",
-    maxWidth: 1100,
+    maxWidth: 600,
     display: "flex",
-    gap: 10,
-    justifyContent: "space-between",
+    gap: 4,
+    justifyContent: "space-around",
     alignItems: "center",
+    padding: "0 2px",
   };
 
   const navBtn = (active) => ({
-    flex: 1,
+    flex: "1 1 0",
     minWidth: 0,
-    height: 48,
-    padding: "0 8px",
-    borderRadius: 16,
-    background: active ? BRAND.primary : "#171717",
-    border: "1px solid #2a2a2a",
-    color: "#fff",
-    fontWeight: 900,
-    fontSize: 12,
+    maxWidth: 72,
+    height: 52,
+    padding: "6px 2px",
+    borderRadius: 14,
+    background: active 
+      ? `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`
+      : "rgba(255,255,255,0.03)",
+    border: active ? "none" : "1px solid rgba(255,255,255,0.06)",
+    color: active ? "#fff" : BRAND.mutedLight,
+    fontWeight: 700,
+    fontSize: 10,
     cursor: "pointer",
     display: "flex",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    lineHeight: 1.2,
+    gap: 2,
+    lineHeight: 1.1,
     overflow: "hidden",
-    whiteSpace: "nowrap",
+    transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
+    boxShadow: active ? "0 4px 16px rgba(239,68,68,0.35)" : "none",
   });
 
   const cartCount = cart?.totalQuantity || 0;
@@ -2524,44 +2636,105 @@ export default function App() {
   }, [userName, userEmail]);
 
   const GLOBAL_CSS = `
-    @keyframes shimmer { 0%{background-position: -1000px 0} 100%{background-position: 1000px 0} }
-    @keyframes viewIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0px); } }
-    @keyframes cardSlideIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: translateY(0px) scale(1); } }
+    /* ====== PREMIUM ANIMATIONS ====== */
+    @keyframes shimmer { 
+      0% { background-position: -1000px 0; } 
+      100% { background-position: 1000px 0; } 
+    }
+    @keyframes viewIn { 
+      from { opacity: 0; transform: translateY(12px) scale(0.98); } 
+      to { opacity: 1; transform: translateY(0) scale(1); } 
+    }
+    @keyframes cardSlideIn { 
+      from { opacity: 0; transform: translateY(20px) scale(0.95); } 
+      to { opacity: 1; transform: translateY(0) scale(1); } 
+    }
     @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
-    @keyframes slideInRight { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
-    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    @keyframes gradientShift { 
+      0% { background-position: 0% 50%; } 
+      50% { background-position: 100% 50%; } 
+      100% { background-position: 0% 50%; } 
+    }
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(239,68,68,0.3); }
+      50% { box-shadow: 0 0 40px rgba(239,68,68,0.5); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes ripple {
+      to { transform: scale(4); opacity: 0; }
+    }
+    @keyframes borderGlow {
+      0%, 100% { border-color: rgba(239,68,68,0.3); }
+      50% { border-color: rgba(239,68,68,0.6); }
+    }
 
+    /* ====== BASE STYLES ====== */
     html, body, #root {
       width: 100%;
       height: 100%;
       margin: 0;
+      padding: 0;
       background: ${BRAND.bg};
+      background-image: radial-gradient(ellipse at top, rgba(239,68,68,0.03) 0%, transparent 50%);
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     body {
-      overscroll-behavior-x: none;
-      overscroll-behavior-y: none;
+      overscroll-behavior: none;
       touch-action: pan-y;
       -webkit-overflow-scrolling: touch;
     }
 
     * {
       box-sizing: border-box;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      font-family: 'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       -webkit-tap-highlight-color: transparent;
     }
 
-    input, button { outline: none; }
-    ::selection { background: rgba(239,68,68,0.35); }
+    input, button, select { 
+      outline: none; 
+      font-family: inherit;
+    }
+    
+    ::selection { 
+      background: rgba(239,68,68,0.4); 
+      color: #fff;
+    }
 
+    /* ====== SCROLLBAR STYLING ====== */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.15);
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    /* ====== UTILITY CLASSES ====== */
     .skeleton-shimmer {
-      background: linear-gradient(90deg, #1a1a1a 0%, #2a2a2a 50%, #1a1a1a 100%);
+      background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%);
       background-size: 1000px 100%;
       animation: shimmer 2s infinite;
     }
@@ -2574,37 +2747,88 @@ export default function App() {
     .btn-loading::after {
       content: '';
       display: inline-block;
-      width: 12px;
-      height: 12px;
-      border: 2px solid rgba(255,255,255,0.3);
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.2);
       border-top-color: #fff;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-left: 6px;
+      animation: spin 0.7s linear infinite;
+      margin-left: 8px;
     }
 
     .card-hover {
-      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     .card-hover:active {
-      transform: scale(0.96);
+      transform: scale(0.97);
     }
 
     .price-transition {
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    a { color: inherit; }
+    a { 
+      color: inherit; 
+      text-decoration: none;
+    }
 
     .view-anim {
-      animation: viewIn 180ms ease-out;
+      animation: viewIn 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
       will-change: transform, opacity;
     }
 
+    /* ====== GLASS MORPHISM ====== */
+    .glass-card {
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+    }
+
+    /* ====== PREMIUM INPUT STYLING ====== */
+    .premium-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    
+    .premium-input:focus {
+      background: rgba(255,255,255,0.05);
+      border-color: rgba(239,68,68,0.5);
+      box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
+    }
+    
+    .premium-input::placeholder {
+      color: rgba(255,255,255,0.35);
+    }
+
+    /* ====== RESPONSIVE - FOLD PHONES ====== */
+    @media (max-width: 320px) {
+      .search-row { grid-template-columns: 1fr !important; }
+      .top-cart-btn { width: 100% !important; }
+      .topbar-actions { flex-direction: column !important; gap: 6px !important; }
+      .nav-label { display: none !important; }
+    }
+    
     @media (max-width: 380px) {
       .search-row { grid-template-columns: 1fr; }
       .top-cart-btn { width: 100% !important; }
+      .vat-toggle { min-width: 160px !important; }
+    }
+    
+    @media (min-width: 768px) {
+      .nav-btn-desktop {
+        min-width: 90px !important;
+        max-width: 120px !important;
+      }
     }
   `;
 
@@ -2613,12 +2837,57 @@ export default function App() {
       <div style={layout}>
         <style>{GLOBAL_CSS}</style>
         <div style={shell}>
-          <div style={{ ...card, marginTop: 18 }}>
-            <Skeleton h={18} w={220} />
-            <div style={{ height: 10 }} />
-            <Skeleton h={14} w={"70%"} />
-            <div style={{ height: 12 }} />
-            <Skeleton h={90} />
+          {/* Premium Loading Screen */}
+          <div style={{ 
+            display: "flex", 
+            flexDirection: "column", 
+            alignItems: "center", 
+            justifyContent: "center",
+            minHeight: "60vh",
+            gap: 24,
+            animation: "fadeIn 0.5s ease",
+          }}>
+            {/* Animated Logo */}
+            <div style={{
+              width: 80,
+              height: 80,
+              borderRadius: 24,
+              background: `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: `0 16px 48px ${BRAND.primaryGlow}`,
+              animation: "float 2s ease-in-out infinite",
+            }}>
+              <span style={{ fontSize: 36, filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }}>🔧</span>
+            </div>
+            
+            <div style={{ textAlign: "center" }}>
+              <div style={{
+                fontSize: 24,
+                fontWeight: 800,
+                background: `linear-gradient(135deg, #fff 0%, ${BRAND.mutedLight} 100%)`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                marginBottom: 8,
+              }}>
+                {BRAND.name}
+              </div>
+              <div style={{ fontSize: 14, color: BRAND.muted }}>
+                Loading your experience...
+              </div>
+            </div>
+            
+            {/* Loading spinner */}
+            <div style={{
+              width: 32,
+              height: 32,
+              border: "3px solid rgba(255,255,255,0.1)",
+              borderTopColor: BRAND.primary,
+              borderRadius: "50%",
+              animation: "spin 0.8s linear infinite",
+            }} />
           </div>
         </div>
       </div>
@@ -2631,76 +2900,67 @@ export default function App() {
 
       <div style={shell}>
         <div style={topbar}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ fontSize: 18, fontWeight: 1000, letterSpacing: 0.2 }}>{BRAND.name}</div>
-              <div style={{ fontSize: 12, color: BRAND.muted }}>
-                {userLine ? `Signed in as ${userLine}` : "Browse & order from your phone"}
+          {/* Header Row */}
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 8, alignItems: "center", marginBottom: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", minWidth: 0, flex: 1 }}>
+              <div style={{ 
+                fontSize: 20, 
+                fontWeight: 800, 
+                letterSpacing: "-0.02em",
+                background: `linear-gradient(135deg, #fff 0%, ${BRAND.mutedLight} 100%)`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}>
+                {BRAND.name}
+              </div>
+              <div style={{ 
+                fontSize: 11, 
+                color: BRAND.muted, 
+                marginTop: 2,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}>
+                {userLine ? `✓ ${userLine}` : "Premium fixings & fasteners"}
               </div>
             </div>
 
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
-              <div style={{ minWidth: 220, display: "flex" }}>
-                <VatToggle mode={vatMode} onChange={setVatMode} />
-              </div>
-
-              {compareProducts.length > 0 && (
-                <Button
-                  variant="ghost"
-                  onClick={() => setView("comparison")}
-                  title="Compare products"
-                  icon="⚖️"
-                  style={{ fontSize: 12 }}
-                >
-                  Compare ({compareProducts.length})
-                </Button>
-              )}
-
-              {favorites.length > 0 && (
-                <Button
-                  variant="ghost"
-                  onClick={() => setView("favorites")}
-                  title="View favorites"
-                  icon="❤️"
-                  style={{ fontSize: 12 }}
-                >
-                  Favorites ({favorites.length})
-                </Button>
-              )}
-
-              {auth ? (
-                <Button variant="ghost" onClick={() => setView("account")} icon="👤" style={{ fontSize: 12 }}>
-                  Account
-                </Button>
-              ) : (
-                <Button variant="ghost" onClick={startLogin} title="Login" icon="🔐" style={{ fontSize: 12 }}>
-                  Login
-                </Button>
-              )}
+            <div className="vat-toggle" style={{ flexShrink: 0 }}>
+              <VatToggle mode={vatMode} onChange={setVatMode} />
             </div>
           </div>
 
-          <div style={{ height: 10 }} />
-
+          {/* Search Row */}
           <div className="search-row" style={searchRow}>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={view === "home" ? "Search collections…" : "Search products…"}
-              style={{
-                width: "100%",
-                minWidth: 0,
-                padding: "12px 12px",
-                borderRadius: 16,
-                border: "1px solid #262626",
-                background: "#0f0f0f",
-                color: "#fff",
-                fontWeight: 700,
-              }}
-            />
+            <div style={{ position: "relative", width: "100%", minWidth: 0 }}>
+              <span style={{ 
+                position: "absolute", 
+                left: 14, 
+                top: "50%", 
+                transform: "translateY(-50%)", 
+                fontSize: 14,
+                opacity: 0.4,
+                pointerEvents: "none",
+              }}>
+                🔍
+              </span>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={view === "home" ? "Search collections…" : "Search products…"}
+                className="premium-input"
+                style={{
+                  paddingLeft: 40,
+                  paddingRight: 14,
+                  height: 48,
+                }}
+              />
+            </div>
             <Button
               className="top-cart-btn"
               variant="dark"
+              size="sm"
               onClick={async () => {
                 try {
                   await ensureCartId();
@@ -2710,36 +2970,48 @@ export default function App() {
                 }
               }}
               title="Open cart"
-              style={{ minWidth: 120, justifyContent: "space-between", gap: 10 }}
+              style={{ 
+                height: 48, 
+                minWidth: 90, 
+                justifyContent: "center", 
+                gap: 8,
+                background: cartCount > 0 
+                  ? `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`
+                  : "rgba(255,255,255,0.05)",
+                boxShadow: cartCount > 0 ? `0 4px 16px ${BRAND.primaryGlow}` : "none",
+              }}
             >
-              <span style={{ fontWeight: 1000 }}>Cart</span>
-              <Badge>{cartCount}</Badge>
+              <span style={{ fontWeight: 700, fontSize: 13 }}>🛒</span>
+              <Badge variant={cartCount > 0 ? "primary" : "default"}>{cartCount}</Badge>
             </Button>
           </div>
 
           {error ? (
             <div
               style={{
-                marginTop: 10,
-                background: "#2a0f0f",
-                border: "1px solid #4a1c1c",
-                color: "#ffd1d1",
-                padding: 10,
+                marginTop: 12,
+                background: "rgba(220,38,38,0.1)",
+                border: "1px solid rgba(220,38,38,0.3)",
+                color: "#fca5a5",
+                padding: 12,
                 borderRadius: 14,
+                animation: "scaleIn 0.2s ease",
               }}
             >
-              <div style={{ fontWeight: 900 }}>Error</div>
-              <div style={{ fontSize: 13, opacity: 0.95 }}>{error}</div>
+              <div style={{ fontWeight: 700, marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                ⚠️ Error
+              </div>
+              <div style={{ fontSize: 13, opacity: 0.9, lineHeight: 1.4 }}>{error}</div>
             </div>
           ) : null}
 
           {!isNative ? (
             <div
               style={{
-                marginTop: 10,
-                background: "#0f1a2a",
-                border: "1px solid #1c2e4a",
-                color: "#d8e8ff",
+                marginTop: 12,
+                background: "rgba(59,130,246,0.1)",
+                border: "1px solid rgba(59,130,246,0.2)",
+                color: "#93c5fd",
                 padding: 10,
                 borderRadius: 14,
               }}
@@ -3344,123 +3616,197 @@ export default function App() {
           )}
 
           {view === "account" && (
-            <div style={card}>
-              <div style={{ fontSize: 18, fontWeight: 1000 }}>Account</div>
-              <div style={{ marginTop: 8, fontSize: 13, color: BRAND.muted, fontWeight: 800 }}>
-                {auth ? (userLine ? `You are signed in as ${userLine}` : "Signed in") : "Not signed in"}
+            <div className="view-anim" style={card}>
+              {/* Account Header */}
+              <div style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                gap: 16,
+                paddingBottom: 16,
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                marginBottom: 16,
+              }}>
+                <div style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 16,
+                  background: auth 
+                    ? `linear-gradient(135deg, ${BRAND.success}, #16a34a)`
+                    : `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 24,
+                  boxShadow: auth 
+                    ? "0 8px 24px rgba(34,197,94,0.3)"
+                    : `0 8px 24px ${BRAND.primaryGlow}`,
+                }}>
+                  {auth ? "✓" : "👤"}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ 
+                    fontSize: 20, 
+                    fontWeight: 700,
+                    background: "linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.8) 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}>
+                    {auth ? "Welcome Back" : "Your Account"}
+                  </div>
+                  <div style={{ 
+                    fontSize: 13, 
+                    color: BRAND.muted, 
+                    marginTop: 4,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}>
+                    {auth ? (userLine || "Signed in") : "Sign in to access your orders"}
+                  </div>
+                </div>
               </div>
 
               {isNonVatCustomer && (
-                <div style={{ marginTop: 10, padding: "8px 10px", background: "#1a2a1a", border: "1px solid #2d5a2d", borderRadius: 12, fontSize: 12, color: "#7cff7c", fontWeight: 900 }}>
-                  ✓ Non-VAT Account (Prices shown excluding VAT)
+                <div style={{ 
+                  marginBottom: 16, 
+                  padding: 12, 
+                  background: "rgba(34,197,94,0.1)", 
+                  border: "1px solid rgba(34,197,94,0.2)", 
+                  borderRadius: 14, 
+                  fontSize: 13, 
+                  color: "#4ade80", 
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}>
+                  <span>✓</span>
+                  Non-VAT Account Active
                 </div>
               )}
 
-              <div style={{ height: 14 }} />
-
               {/* TAX EXEMPTION STATUS */}
               {companyAccount && companyAccount.reverseCharge && (
-                <div style={{ padding: 12, background: "#1a2a1a", border: "1px solid #2d5a2d", borderRadius: 12, marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 1000, color: "#7cff7c", marginBottom: 8 }}>
-                    🇮🇪 Tax Exempt Account
+                <div style={{ 
+                  padding: 16, 
+                  background: "rgba(34,197,94,0.08)", 
+                  border: "1px solid rgba(34,197,94,0.15)", 
+                  borderRadius: 16, 
+                  marginBottom: 16,
+                }}>
+                  <div style={{ 
+                    fontSize: 15, 
+                    fontWeight: 700, 
+                    color: "#4ade80", 
+                    marginBottom: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}>
+                    <span>🏆</span>
+                    Tax Exempt Account
                   </div>
-                  <div style={{ fontSize: 12, color: "#a0d9a0", marginBottom: 10, lineHeight: 1.4 }}>
-                    Your account is verified as tax exempt. All prices shown excluding VAT (reverse charge applies).
+                  <div style={{ fontSize: 13, color: BRAND.mutedLight, marginBottom: 12, lineHeight: 1.5 }}>
+                    Your account is verified as tax exempt. All prices shown excluding VAT.
                   </div>
-                  <div style={{ fontSize: 11, color: "#70b070", fontWeight: 900, padding: 8, background: "#0f1514", borderRadius: 8, textAlign: "center" }}>
-                    ✓ VAT prices: Ex-VAT pricing active
+                  <div style={{ 
+                    fontSize: 12, 
+                    color: "#22c55e", 
+                    fontWeight: 600, 
+                    padding: "10px 14px", 
+                    background: "rgba(34,197,94,0.1)", 
+                    borderRadius: 10, 
+                    textAlign: "center",
+                    border: "1px solid rgba(34,197,94,0.2)",
+                  }}>
+                    ✓ Reverse charge pricing active
                   </div>
                 </div>
               )}
 
               {/* VAT VERIFICATION FORM - Only show if logged in and NOT vat-verified */}
               {auth && !companyAccount?.reverseCharge && !vatFormSubmitted && (
-                <div style={{ padding: 14, background: "#1a2511", border: "1px solid #3d5a2d", borderRadius: 12, marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 1000, color: "#9cff7c", marginBottom: 12 }}>
-                    📋 B2B VAT Verification
+                <div style={{ 
+                  padding: 16, 
+                  background: "rgba(34,197,94,0.05)", 
+                  border: "1px solid rgba(34,197,94,0.1)", 
+                  borderRadius: 16, 
+                  marginBottom: 16,
+                }}>
+                  <div style={{ 
+                    fontSize: 15, 
+                    fontWeight: 700, 
+                    color: "#4ade80", 
+                    marginBottom: 4,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}>
+                    <span>📋</span>
+                    B2B VAT Verification
                   </div>
-                  <div style={{ display: "grid", gap: 10 }}>
+                  <div style={{ fontSize: 12, color: BRAND.muted, marginBottom: 16 }}>
+                    Apply for tax exempt pricing on business orders
+                  </div>
+                  <div style={{ display: "grid", gap: 12 }}>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 900, color: BRAND.muted, marginBottom: 6 }}>
-                        Business Name *
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: BRAND.mutedLight, marginBottom: 6 }}>
+                        Business Name <span style={{ color: BRAND.primary }}>*</span>
                       </label>
                       <input
                         type="text"
                         value={vatFormBusinessName}
                         onChange={(e) => setVatFormBusinessName(e.target.value)}
                         placeholder="e.g., Acme Ltd."
-                        style={{
-                          width: "100%",
-                          padding: "10px 12px",
-                          borderRadius: 10,
-                          border: "1px solid #2d5a2d",
-                          background: "#0b1510",
-                          color: "#fff",
-                          fontWeight: 800,
-                          fontSize: 13,
-                        }}
+                        className="premium-input"
+                        style={{ width: "100%", boxSizing: "border-box" }}
                       />
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 900, color: BRAND.muted, marginBottom: 6 }}>
-                        Country *
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: BRAND.mutedLight, marginBottom: 6 }}>
+                        Country <span style={{ color: BRAND.primary }}>*</span>
                       </label>
                       <select
                         value={vatFormCountry}
                         onChange={(e) => setVatFormCountry(e.target.value)}
-                        style={{
-                          width: "100%",
-                          padding: "10px 12px",
-                          borderRadius: 10,
-                          border: "1px solid #2d5a2d",
-                          background: "#0b1510",
-                          color: "#fff",
-                          fontWeight: 800,
-                          fontSize: 13,
-                        }}
+                        className="premium-input"
+                        style={{ width: "100%", boxSizing: "border-box", cursor: "pointer" }}
                       >
-                        <option value="Ireland">Ireland</option>
-                        <option value="UK">United Kingdom</option>
-                        <option value="Germany">Germany</option>
-                        <option value="France">France</option>
-                        <option value="Spain">Spain</option>
-                        <option value="Italy">Italy</option>
-                        <option value="Netherlands">Netherlands</option>
-                        <option value="Belgium">Belgium</option>
-                        <option value="Austria">Austria</option>
-                        <option value="Czech Republic">Czech Republic</option>
-                        <option value="Denmark">Denmark</option>
-                        <option value="Finland">Finland</option>
-                        <option value="Greece">Greece</option>
-                        <option value="Hungary">Hungary</option>
-                        <option value="Poland">Poland</option>
-                        <option value="Portugal">Portugal</option>
-                        <option value="Romania">Romania</option>
-                        <option value="Slovakia">Slovakia</option>
-                        <option value="Slovenia">Slovenia</option>
-                        <option value="Sweden">Sweden</option>
-                        <option value="Other EU">Other EU</option>
+                        <option value="Ireland">🇮🇪 Ireland</option>
+                        <option value="UK">🇬🇧 United Kingdom</option>
+                        <option value="Germany">🇩🇪 Germany</option>
+                        <option value="France">🇫🇷 France</option>
+                        <option value="Spain">🇪🇸 Spain</option>
+                        <option value="Italy">🇮🇹 Italy</option>
+                        <option value="Netherlands">🇳🇱 Netherlands</option>
+                        <option value="Belgium">🇧🇪 Belgium</option>
+                        <option value="Austria">🇦🇹 Austria</option>
+                        <option value="Czech Republic">🇨🇿 Czech Republic</option>
+                        <option value="Denmark">🇩🇰 Denmark</option>
+                        <option value="Finland">🇫🇮 Finland</option>
+                        <option value="Greece">🇬🇷 Greece</option>
+                        <option value="Hungary">🇭🇺 Hungary</option>
+                        <option value="Poland">🇵🇱 Poland</option>
+                        <option value="Portugal">🇵🇹 Portugal</option>
+                        <option value="Romania">🇷🇴 Romania</option>
+                        <option value="Slovakia">🇸🇰 Slovakia</option>
+                        <option value="Slovenia">🇸🇮 Slovenia</option>
+                        <option value="Sweden">🇸🇪 Sweden</option>
+                        <option value="Other EU">🌍 Other EU</option>
                       </select>
                     </div>
                     <div>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 900, color: BRAND.muted, marginBottom: 6 }}>
-                        VAT Number *
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: BRAND.mutedLight, marginBottom: 6 }}>
+                        VAT Number <span style={{ color: BRAND.primary }}>*</span>
                       </label>
                       <input
                         type="text"
                         value={vatFormVatNumber}
                         onChange={(e) => setVatFormVatNumber(e.target.value)}
                         placeholder="e.g., IE1234567AB"
-                        style={{
-                          width: "100%",
-                          padding: "10px 12px",
-                          borderRadius: 10,
-                          border: "1px solid #2d5a2d",
-                          background: "#0b1510",
-                          color: "#fff",
-                          fontWeight: 800,
-                          fontSize: 13,
-                        }}
+                        className="premium-input"
+                        style={{ width: "100%", boxSizing: "border-box" }}
                       />
                     </div>
                     <Button
@@ -3477,8 +3823,9 @@ export default function App() {
                         }
                       }}
                       loading={vatFormLoading}
-                      style={{ width: "100%", marginTop: 6, fontSize: 13 }}
+                      style={{ width: "100%", marginTop: 8 }}
                       icon={vatFormLoading ? undefined : "✓"}
+                      variant="success"
                     >
                       {vatFormLoading ? "Submitting..." : "Submit for Verification"}
                     </Button>
@@ -3488,11 +3835,26 @@ export default function App() {
 
               {/* AWAITING VERIFICATION MESSAGE */}
               {auth && vatFormSubmitted && !companyAccount?.reverseCharge && (
-                <div style={{ padding: 12, background: "#2a2a1a", border: "1px solid #5a5a2d", borderRadius: 12, marginBottom: 14 }}>
-                  <div style={{ fontSize: 13, fontWeight: 1000, color: "#ffb366", marginBottom: 6 }}>
-                    ⏳ Awaiting Verification
+                <div style={{ 
+                  padding: 16, 
+                  background: "rgba(234,179,8,0.1)", 
+                  border: "1px solid rgba(234,179,8,0.2)", 
+                  borderRadius: 16, 
+                  marginBottom: 16,
+                }}>
+                  <div style={{ 
+                    fontSize: 15, 
+                    fontWeight: 700, 
+                    color: "#fbbf24", 
+                    marginBottom: 6,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}>
+                    <span style={{ animation: "pulse 2s infinite" }}>⏳</span>
+                    Awaiting Verification
                   </div>
-                  <div style={{ fontSize: 12, color: "#d9b8a0", lineHeight: 1.4 }}>
+                  <div style={{ fontSize: 13, color: BRAND.mutedLight, lineHeight: 1.5 }}>
                     Your VAT verification has been submitted. Our team will review and verify your details within 1-2 business days.
                   </div>
                 </div>
@@ -3501,132 +3863,243 @@ export default function App() {
               {!auth && !userEmail ? (
                 <div>
                   {!showRegForm ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      <Button onClick={() => setShowRegForm(true)} style={{ width: "100%" }}>
-                        📝 Register / Sign Up
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <Button onClick={() => setShowRegForm(true)} style={{ width: "100%", padding: "16px 20px" }} icon="✨">
+                        Create New Account
                       </Button>
-                      <Button variant="dark" onClick={startLogin} style={{ width: "100%" }}>
-                        🔐 Login with Shopify (Existing Customers)
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
+                        <span style={{ fontSize: 12, color: BRAND.muted }}>or</span>
+                        <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
+                      </div>
+                      <Button variant="ghost" onClick={startLogin} style={{ width: "100%", padding: "14px 20px" }} icon="🔐">
+                        Login (Existing Customers)
                       </Button>
                     </div>
                   ) : (
-                    <div style={{ background: "#1a1a1a", padding: 14, borderRadius: 12, border: "1px solid #333" }}>
-                      <div style={{ fontSize: 14, fontWeight: 900, color: "#fff", marginBottom: 12 }}>
-                        📝 Create Account
+                    <div style={{ 
+                      background: "rgba(255,255,255,0.02)", 
+                      padding: 20, 
+                      borderRadius: 20, 
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      animation: "scaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    }}>
+                      <div style={{ 
+                        fontSize: 18, 
+                        fontWeight: 700, 
+                        color: "#fff", 
+                        marginBottom: 6,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}>
+                        <span style={{ fontSize: 22 }}>✨</span>
+                        Create Your Account
+                      </div>
+                      <div style={{ fontSize: 13, color: BRAND.muted, marginBottom: 20 }}>
+                        Join thousands of happy customers
                       </div>
                       
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        <input
-                          type="email"
-                          placeholder="Email *"
-                          value={regEmail}
-                          onChange={(e) => setRegEmail(e.target.value)}
-                          style={{ padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
-                        />
-                        
-                        <div style={{ display: "flex", gap: 8 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {/* Email */}
+                        <div>
+                          <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 6, display: "block", fontWeight: 600 }}>
+                            Email Address <span style={{ color: BRAND.primary }}>*</span>
+                          </label>
                           <input
-                            type="text"
-                            placeholder="First Name"
-                            value={regFirstName}
-                            onChange={(e) => setRegFirstName(e.target.value)}
-                            style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
-                          />
-                          <input
-                            type="text"
-                            placeholder="Last Name"
-                            value={regLastName}
-                            onChange={(e) => setRegLastName(e.target.value)}
-                            style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
+                            type="email"
+                            placeholder="your@email.com"
+                            value={regEmail}
+                            onChange={(e) => setRegEmail(e.target.value)}
+                            className="premium-input"
+                            style={{ width: "100%", boxSizing: "border-box" }}
                           />
                         </div>
                         
-                        <input
-                          type="tel"
-                          placeholder="Phone"
-                          value={regPhone}
-                          onChange={(e) => setRegPhone(e.target.value)}
-                          style={{ padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
-                        />
+                        {/* Name Row */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                          <div>
+                            <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 6, display: "block", fontWeight: 600 }}>
+                              First Name
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="John"
+                              value={regFirstName}
+                              onChange={(e) => setRegFirstName(e.target.value)}
+                              className="premium-input"
+                              style={{ width: "100%", boxSizing: "border-box" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 6, display: "block", fontWeight: 600 }}>
+                              Last Name
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Smith"
+                              value={regLastName}
+                              onChange={(e) => setRegLastName(e.target.value)}
+                              className="premium-input"
+                              style={{ width: "100%", boxSizing: "border-box" }}
+                            />
+                          </div>
+                        </div>
                         
-                        <input
-                          type="text"
-                          placeholder="Address"
-                          value={regAddress1}
-                          onChange={(e) => setRegAddress1(e.target.value)}
-                          style={{ padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
-                        />
-                        
-                        <div style={{ display: "flex", gap: 8 }}>
+                        {/* Phone */}
+                        <div>
+                          <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 6, display: "block", fontWeight: 600 }}>
+                            Phone Number
+                          </label>
                           <input
-                            type="text"
-                            placeholder="City"
-                            value={regCity}
-                            onChange={(e) => setRegCity(e.target.value)}
-                            style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
-                          />
-                          <input
-                            type="text"
-                            placeholder="County"
-                            value={regCounty}
-                            onChange={(e) => setRegCounty(e.target.value)}
-                            style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
+                            type="tel"
+                            placeholder="+44 7XXX XXXXXX"
+                            value={regPhone}
+                            onChange={(e) => setRegPhone(e.target.value)}
+                            className="premium-input"
+                            style={{ width: "100%", boxSizing: "border-box" }}
                           />
                         </div>
                         
-                        <div style={{ display: "flex", gap: 8 }}>
+                        {/* Address */}
+                        <div>
+                          <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 6, display: "block", fontWeight: 600 }}>
+                            Street Address
+                          </label>
                           <input
                             type="text"
-                            placeholder="Postcode"
-                            value={regPostcode}
-                            onChange={(e) => setRegPostcode(e.target.value)}
-                            style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
+                            placeholder="123 Main Street"
+                            value={regAddress1}
+                            onChange={(e) => setRegAddress1(e.target.value)}
+                            className="premium-input"
+                            style={{ width: "100%", boxSizing: "border-box" }}
                           />
-                          <select
-                            value={regCountry}
-                            onChange={(e) => setRegCountry(e.target.value)}
-                            style={{ flex: 1, padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14 }}
-                          >
-                            <option value="Ireland">Ireland</option>
-                            <option value="United Kingdom">United Kingdom</option>
-                            <option value="Germany">Germany</option>
-                            <option value="France">France</option>
-                            <option value="Netherlands">Netherlands</option>
-                            <option value="Belgium">Belgium</option>
-                            <option value="Spain">Spain</option>
-                            <option value="Italy">Italy</option>
-                            <option value="Poland">Poland</option>
-                            <option value="Other">Other EU</option>
-                          </select>
                         </div>
                         
-                        <div style={{ borderTop: "1px solid #333", marginTop: 6, paddingTop: 10 }}>
-                          <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>
-                            VAT Number (optional - for B2B tax exemption)
+                        {/* City & County */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                          <div>
+                            <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 6, display: "block", fontWeight: 600 }}>
+                              City
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Dublin"
+                              value={regCity}
+                              onChange={(e) => setRegCity(e.target.value)}
+                              className="premium-input"
+                              style={{ width: "100%", boxSizing: "border-box" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 6, display: "block", fontWeight: 600 }}>
+                              County
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="County Dublin"
+                              value={regCounty}
+                              onChange={(e) => setRegCounty(e.target.value)}
+                              className="premium-input"
+                              style={{ width: "100%", boxSizing: "border-box" }}
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* Postcode & Country */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                          <div>
+                            <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 6, display: "block", fontWeight: 600 }}>
+                              Postcode
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="D01 ABC"
+                              value={regPostcode}
+                              onChange={(e) => setRegPostcode(e.target.value)}
+                              className="premium-input"
+                              style={{ width: "100%", boxSizing: "border-box" }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 6, display: "block", fontWeight: 600 }}>
+                              Country
+                            </label>
+                            <select
+                              value={regCountry}
+                              onChange={(e) => setRegCountry(e.target.value)}
+                              className="premium-input"
+                              style={{ width: "100%", boxSizing: "border-box", cursor: "pointer" }}
+                            >
+                              <option value="Ireland">🇮🇪 Ireland</option>
+                              <option value="United Kingdom">🇬🇧 United Kingdom</option>
+                              <option value="Germany">🇩🇪 Germany</option>
+                              <option value="France">🇫🇷 France</option>
+                              <option value="Netherlands">🇳🇱 Netherlands</option>
+                              <option value="Belgium">🇧🇪 Belgium</option>
+                              <option value="Spain">🇪🇸 Spain</option>
+                              <option value="Italy">🇮🇹 Italy</option>
+                              <option value="Poland">🇵🇱 Poland</option>
+                              <option value="Other">🌍 Other EU</option>
+                            </select>
+                          </div>
+                        </div>
+                        
+                        {/* VAT Section */}
+                        <div style={{ 
+                          borderTop: "1px solid rgba(255,255,255,0.06)", 
+                          marginTop: 8, 
+                          paddingTop: 16,
+                        }}>
+                          <div style={{ 
+                            fontSize: 13, 
+                            color: BRAND.mutedLight, 
+                            marginBottom: 10,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}>
+                            <span>🏢</span>
+                            <span style={{ fontWeight: 600 }}>Business Customer?</span>
+                            <span style={{ 
+                              fontSize: 10, 
+                              background: "rgba(139,92,246,0.2)", 
+                              padding: "2px 8px", 
+                              borderRadius: 99,
+                              color: "#a78bfa",
+                            }}>
+                              Optional
+                            </span>
                           </div>
                           <input
                             type="text"
                             placeholder="VAT Number (e.g., IE1234567X)"
                             value={regVatNumber}
                             onChange={(e) => setRegVatNumber(e.target.value)}
-                            style={{ width: "100%", padding: 10, borderRadius: 8, border: "1px solid #444", background: "#222", color: "#fff", fontSize: 14, boxSizing: "border-box" }}
+                            className="premium-input"
+                            style={{ width: "100%", boxSizing: "border-box" }}
                           />
+                          <div style={{ fontSize: 11, color: BRAND.muted, marginTop: 6 }}>
+                            Add your VAT number to apply for tax exemption on B2B orders
+                          </div>
                         </div>
                         
-                        <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                        {/* Buttons */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 10, marginTop: 8 }}>
                           <Button 
-                            variant="dark" 
+                            variant="ghost" 
                             onClick={() => setShowRegForm(false)} 
-                            style={{ flex: 1 }}
+                            style={{ padding: "14px 16px" }}
                           >
                             Cancel
                           </Button>
                           <Button 
                             onClick={registerCustomer} 
                             loading={regLoading}
-                            style={{ flex: 2 }}
+                            style={{ padding: "14px 16px" }}
+                            icon={regLoading ? undefined : "🚀"}
                           >
-                            {regLoading ? "Creating Account..." : "Create Account"}
+                            {regLoading ? "Creating..." : "Create Account"}
                           </Button>
                         </div>
                       </div>
@@ -3634,15 +4107,17 @@ export default function App() {
                   )}
                 </div>
               ) : auth ? (
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <Button variant="dark" onClick={() => setView("home")} style={{ flex: 1, minWidth: 160 }}>
-                    Back to Shop
-                  </Button>
-                  <Button variant="dark" onClick={() => setView("orders")} style={{ flex: 1, minWidth: 160 }}>
-                    Orders
-                  </Button>
-                  <Button onClick={logout} style={{ flex: 1, minWidth: 160 }}>
-                    Logout
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <Button variant="ghost" onClick={() => setView("home")} icon="🏠" style={{ padding: "14px" }}>
+                      Shop
+                    </Button>
+                    <Button variant="ghost" onClick={() => setView("orders")} icon="📋" style={{ padding: "14px" }}>
+                      My Orders
+                    </Button>
+                  </div>
+                  <Button onClick={logout} variant="dark" icon="👋" style={{ padding: "14px" }}>
+                    Sign Out
                   </Button>
                 </div>
               ) : userEmail ? (
@@ -3689,23 +4164,28 @@ export default function App() {
         <div style={bottomNav}>
           <div style={navInner}>
             <button type="button" style={navBtn(view === "home")} onClick={() => setView("home")}>
-              <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Home</span>
+              <span style={{ fontSize: 18 }}>🏠</span>
+              <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Home</span>
             </button>
 
             <button
               type="button"
-              style={navBtn(view === "collection")}
+              style={navBtn(view === "collection" || view === "product")}
               onClick={() => {
                 if (activeCollection) setView("collection");
                 else setView("home");
               }}
             >
-              <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Browse</span>
+              <span style={{ fontSize: 18 }}>📦</span>
+              <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Browse</span>
             </button>
 
             <button
               type="button"
-              style={navBtn(view === "cart")}
+              style={{
+                ...navBtn(view === "cart"),
+                position: "relative",
+              }}
               onClick={async () => {
                 try {
                   await ensureCartId();
@@ -3715,8 +4195,28 @@ export default function App() {
                 }
               }}
             >
-              <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Cart</span>
-              <Badge>{cartCount}</Badge>
+              <span style={{ fontSize: 18 }}>🛒</span>
+              <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Cart</span>
+              {cartCount > 0 && (
+                <span style={{
+                  position: "absolute",
+                  top: 4,
+                  right: "calc(50% - 18px)",
+                  minWidth: 16,
+                  height: 16,
+                  padding: "0 4px",
+                  background: view === "cart" ? "#fff" : BRAND.primary,
+                  color: view === "cart" ? BRAND.primary : "#fff",
+                  borderRadius: 99,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}>
+                  {cartCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -3731,11 +4231,13 @@ export default function App() {
                 setView("orders");
               }}
             >
-              <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Orders</span>
+              <span style={{ fontSize: 18 }}>📋</span>
+              <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Orders</span>
             </button>
 
             <button type="button" style={navBtn(view === "account")} onClick={() => setView("account")}>
-              <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Account</span>
+              <span style={{ fontSize: 18 }}>👤</span>
+              <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Account</span>
             </button>
           </div>
         </div>
@@ -3745,25 +4247,31 @@ export default function App() {
           <div
             style={{
               position: "fixed",
-              left: 0,
-              right: 0,
-              bottom: "calc(82px + env(safe-area-inset-bottom))",
+              left: 16,
+              right: 16,
+              bottom: "calc(76px + env(safe-area-inset-bottom))",
               display: "flex",
               justifyContent: "center",
               pointerEvents: "none",
               zIndex: 20000,
+              animation: "slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
             }}
           >
             <div
               style={{
                 pointerEvents: "none",
-                background: "rgba(20,20,20,0.95)",
-                border: "1px solid #2a2a2a",
-                padding: "10px 14px",
-                borderRadius: 999,
+                background: BRAND.glassHeavy,
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                border: `1px solid ${BRAND.glassBorder}`,
+                padding: "12px 20px",
+                borderRadius: 16,
                 color: "#fff",
-                fontWeight: 900,
-                boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                fontWeight: 600,
+                fontSize: 14,
+                boxShadow: BRAND.shadowLg,
+                maxWidth: "90%",
+                textAlign: "center",
               }}
             >
               {toast}
