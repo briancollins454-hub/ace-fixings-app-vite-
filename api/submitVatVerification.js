@@ -25,7 +25,7 @@ export default async function handler(req, res) {
 
     const shopDomain = process.env.SHOPIFY_DOMAIN || process.env.SHOP_DOMAIN || "acefixings.myshopify.com";
     const adminToken = process.env.SHOPIFY_ADMIN_API_TOKEN;
-    const apiVersion = process.env.SHOPIFY_API_VERSION || "2025-07";
+    const apiVersion = process.env.SHOPIFY_API_VERSION || "2024-01";
 
     if (!adminToken) {
       console.error("Missing SHOPIFY_ADMIN_API_TOKEN in environment");
