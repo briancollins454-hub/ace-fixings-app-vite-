@@ -119,80 +119,18 @@ export default async function handler(req, res) {
       throw new Error(`Metafield update failed: ${JSON.stringify(metafieldResponse.errors)}`);
     }
 
+    // Check for userErrors from the mutation
+    if (metafieldResponse?.metafieldsSet?.userErrors?.length > 0) {
+      console.error("Metafield userErrors:", metafieldResponse.metafieldsSet.userErrors);
+      throw new Error(`Metafield update failed: ${JSON.stringify(metafieldResponse.metafieldsSet.userErrors)}`);
+    }
+
     console.log(`[VAT] Metafields updated for customer ${customerId}`);
 
-    // Step 3: Add customer to "no vat customers" segment
-    const segmentMutation = `
-      mutation AddCustomerToSegment($customerId: ID!, $segmentId: ID!) {
-        segmentCustomersAdd(customerId: $customerId, segmentId: $segmentId) {
-          userErrors {
-            field
-            message
-          }
-          customers {
-            id
-          }
-        }
-      }
-    `;
-
-    // First, get the segment ID for "no vat customers"
-    const segmentQuery = `
-      query GetSegments($first: Int!) {
-        segments(first: $first) {
-          edges {
-            node {
-              id
-              name
-            }
-          }
-        }
-      }
-    `;
-
-    const segmentData = await graphqlRequest(
-      shopDomain,
-      adminToken,
-      apiVersion,
-      segmentQuery,
-      { first: 100 }
-    );
-
-    const noVatSegment = segmentData?.segments?.edges?.find(
-      (e) => e.node.name?.toLowerCase() === "no vat customers"
-    );
-
-    if (!noVatSegment) {
-      console.warn("[VAT] 'no vat customers' segment not found. Metafields updated but segment addition skipped.");
-      return res.status(200).json({
-        success: true,
-        message: "VAT data submitted. Please ensure 'no vat customers' segment exists in Shopify.",
-      });
-    }
-
-    console.log(`[VAT] Found segment: ${noVatSegment.node.id}`);
-
-    const segmentResponse = await graphqlRequest(
-      shopDomain,
-      adminToken,
-      apiVersion,
-      segmentMutation,
-      {
-        customerId: customerId,
-        segmentId: noVatSegment.node.id,
-      }
-    );
-
-    if (segmentResponse?.errors) {
-      console.error("Segment errors:", segmentResponse.errors);
-      throw new Error(`Segment add failed: ${JSON.stringify(segmentResponse.errors)}`);
-    }
-
-    console.log(`[VAT] Customer added to segment`);
-
+    // Success - metafields are saved, admin can review in Shopify
     return res.status(200).json({
       success: true,
-      message: "VAT verification submitted. Your team will review and approve soon.",
+      message: "VAT verification submitted successfully. Your application will be reviewed shortly.",
     });
   } catch (err) {
     console.error("[VAT] Error:", err.message);
