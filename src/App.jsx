@@ -2854,17 +2854,28 @@ export default function App() {
           }}>
             {/* Animated Logo */}
             <div style={{
-              width: 80,
-              height: 80,
+              width: 100,
+              height: 100,
               borderRadius: 24,
-              background: `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`,
+              background: `linear-gradient(135deg, ${BRAND.primary}15, ${BRAND.secondary}15)`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               boxShadow: `0 16px 48px ${BRAND.primaryGlow}`,
               animation: "float 2s ease-in-out infinite",
+              padding: 12,
+              border: `1px solid ${BRAND.primary}30`,
             }}>
-              <span style={{ fontSize: 36, filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }}>🔧</span>
+              <img 
+                src="/logo.png" 
+                alt="Ace Fixings" 
+                style={{ 
+                  width: "100%", 
+                  height: "100%", 
+                  objectFit: "contain",
+                  filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.4))",
+                }}
+              />
             </div>
             
             <div style={{ textAlign: "center" }}>
@@ -4590,36 +4601,6 @@ function ProductView({ product, collectionProducts, setActiveProduct, setView, o
               SKU: <span style={{ color: "#fff" }}>{variant.sku}</span>
             </div>
           )}
-
-          {/* Reviews Section */}
-          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #1f1f1f" }}>
-            <div style={{ fontSize: 14, fontWeight: 1000, marginBottom: 10 }}>Product Reviews (23)</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-              <StarRating rating={4.5} size={14} />
-              <span style={{ fontSize: 12, color: BRAND.muted, fontWeight: 900 }}>4.5 out of 5</span>
-            </div>
-            <div style={{ display: "grid", gap: 10 }}>
-              <div style={{ padding: 10, borderRadius: 10, background: "#0f0f0f", border: "1px solid #1f1f1f" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <StarRating rating={5} size={12} />
-                  <span style={{ fontSize: 11, fontWeight: 900, color: "#fff" }}>John M.</span>
-                  <span style={{ fontSize: 10, color: BRAND.muted }}>Verified</span>
-                </div>
-                <div style={{ fontSize: 12, color: "#e5e5e5", lineHeight: 1.5 }}>"Excellent quality! Fast shipping and exactly as described."</div>
-              </div>
-              <div style={{ padding: 10, borderRadius: 10, background: "#0f0f0f", border: "1px solid #1f1f1f" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <StarRating rating={4} size={12} />
-                  <span style={{ fontSize: 11, fontWeight: 900, color: "#fff" }}>Sarah P.</span>
-                  <span style={{ fontSize: 10, color: BRAND.muted }}>Verified</span>
-                </div>
-                <div style={{ fontSize: 12, color: "#e5e5e5", lineHeight: 1.5 }}>"Perfect for my projects. Great value!"</div>
-              </div>
-            </div>
-            <Button variant="ghost" onClick={() => setToast("Thank you for your interest!")} style={{ fontSize: 11, marginTop: 10 }} icon="✎">
-              Write a review
-            </Button>
-          </div>
 
           {/* Related Products Section */}
           <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid #1f1f1f" }}>

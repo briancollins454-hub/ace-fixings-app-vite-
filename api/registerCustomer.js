@@ -77,9 +77,90 @@ export default async function handler(req, res) {
     let isNewCustomer = false;
 
     if (searchResponse?.customers?.edges?.length > 0) {
-      // Customer exists - update them
+      // Customer exists - update their details
       customerId = searchResponse.customers.edges[0].node.id;
       console.log(`[Register] Found existing customer: ${customerId}`);
+      
+      // Update existing customer with new details
+      const updateMutation = `
+        mutation UpdateCustomer($input: CustomerInput!) {
+          customerUpdate(input: $input) {
+            customer {
+              id
+              email
+              firstName
+              lastName
+              phone
+            }
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `;
+
+      const updateInput = {
+        id: customerId,
+        firstName: firstName || undefined,
+        lastName: lastName || undefined,
+        phone: phone || undefined,
+        tags: vatNumber ? ["No Vat Customers"] : [],
+      };
+
+      const updateResponse = await graphqlRequest(
+        shopDomain,
+        adminToken,
+        apiVersion,
+        updateMutation,
+        { input: updateInput }
+      );
+
+      if (updateResponse?.customerUpdate?.userErrors?.length > 0) {
+        console.warn("[Register] Update warnings:", updateResponse.customerUpdate.userErrors);
+      } else {
+        console.log(`[Register] Updated customer details for: ${customerId}`);
+      }
+
+      // Update address for existing customer
+      if (address && address.address1) {
+        const addressMutation = `
+          mutation UpdateAddress($customerId: ID!, $address: MailingAddressInput!) {
+            customerAddressCreate(customerId: $customerId, address: $address) {
+              customerAddress {
+                id
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `;
+
+        const addressInput = {
+          address1: address.address1,
+          address2: address.address2 || "",
+          city: address.city || "",
+          province: address.province || "",
+          zip: address.zip || "",
+          country: address.country || "Ireland",
+        };
+
+        const addressResponse = await graphqlRequest(
+          shopDomain,
+          adminToken,
+          apiVersion,
+          addressMutation,
+          { customerId, address: addressInput }
+        );
+
+        if (addressResponse?.customerAddressCreate?.userErrors?.length > 0) {
+          console.warn("[Register] Address warnings:", addressResponse.customerAddressCreate.userErrors);
+        } else {
+          console.log(`[Register] Added address for: ${customerId}`);
+        }
+      }
     } else {
       // Create new customer
       console.log(`[Register] Creating new customer: ${email}`);
