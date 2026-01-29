@@ -1715,10 +1715,14 @@ export default function App() {
             // OneSignal SDK 5.x API
             OneSignal.initialize(ONESIGNAL_APP_ID);
             
-            // Request notification permission
-            OneSignal.Notifications.requestPermission(true).then((accepted) => {
-              console.log("[OneSignal] Permission accepted:", accepted);
-            });
+            // Request notification permission with a slight delay to ensure proper initialization
+            setTimeout(() => {
+              OneSignal.Notifications.requestPermission(true).then((accepted) => {
+                console.log("[OneSignal] Permission accepted:", accepted);
+              }).catch((err) => {
+                console.log("[OneSignal] Permission request error:", err);
+              });
+            }, 1000);
             
             // Log subscription status
             OneSignal.User.pushSubscription.getIdAsync().then((id) => {
@@ -1728,6 +1732,19 @@ export default function App() {
             console.log("[OneSignal] Initialization complete");
           } catch (err) {
             console.error("[OneSignal] Init error:", err);
+          }
+        }
+
+        // Request camera permission early (for barcode scanner)
+        if (isNative) {
+          try {
+            const { camera } = await BarcodeScanner.checkPermissions();
+            if (camera === "prompt" || camera === "prompt-with-rationale") {
+              // Will be prompted when they first use the scanner
+              console.log("[Camera] Permission will be requested on first scan");
+            }
+          } catch (e) {
+            console.log("[Camera] Permission check error:", e);
           }
         }
 
@@ -2477,6 +2494,30 @@ export default function App() {
   // ================================
   // 🔷 QUANTITY CALCULATOR FUNCTIONS
   // ================================
+  
+  // Check if product is relevant for calculator (screws, nails, bolts, fixings, etc.)
+  function isCalculatorRelevant(product) {
+    if (!product) return false;
+    
+    const relevantKeywords = [
+      'screw', 'nail', 'bolt', 'nut', 'washer', 'fixing', 'fixings',
+      'anchor', 'plug', 'dowel', 'rivet', 'staple', 'tack', 'pin',
+      'clip', 'clamp', 'bracket', 'hanger', 'fastener', 'timber connector',
+      'coach', 'hex', 'pozi', 'torx', 'phillips', 'slotted',
+      'chipboard', 'drywall', 'plasterboard', 'masonry', 'concrete',
+      'wood', 'metal', 'roofing', 'decking', 'fencing', 'joist'
+    ];
+    
+    const titleLower = (product.title || '').toLowerCase();
+    const typeLower = (product.productType || '').toLowerCase();
+    const vendorLower = (product.vendor || '').toLowerCase();
+    
+    // Check if any keyword matches
+    return relevantKeywords.some(keyword => 
+      titleLower.includes(keyword) || 
+      typeLower.includes(keyword)
+    );
+  }
   
   function openCalculator(product) {
     setCalcProduct(product);
@@ -4217,6 +4258,7 @@ export default function App() {
                 }
               }}
               onOpenCalculator={() => openCalculator(activeProduct)}
+              showCalculator={isCalculatorRelevant(activeProduct)}
               onAddToProject={() => {
                 setAddToProjectProduct(activeProduct);
                 setProjectQuantity(1);
@@ -5874,7 +5916,7 @@ export default function App() {
 // ==========================
 // PRODUCT VIEW COMPONENT
 // ==========================
-function ProductView({ product, collectionProducts, setActiveProduct, setView, onBack, vatLabel, displayPrice, displayCompareAt, onAdd, onOpenCalculator, onAddToProject, isFavorited, onToggleFavorite }) {
+function ProductView({ product, collectionProducts, setActiveProduct, setView, onBack, vatLabel, displayPrice, displayCompareAt, onAdd, onOpenCalculator, showCalculator, onAddToProject, isFavorited, onToggleFavorite }) {
   const [qty, setQty] = useState(1);
   const [variantId, setVariantId] = useState(product?.variants?.[0]?.id || "");
   const [isAdding, setIsAdding] = useState(false);
@@ -6036,26 +6078,28 @@ function ProductView({ product, collectionProducts, setActiveProduct, setView, o
 
           {/* Pro Feature Buttons */}
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-            <button
-              onClick={onOpenCalculator}
-              style={{
-                flex: 1,
-                padding: "12px 14px",
-                borderRadius: 12,
-                border: "1px solid rgba(16,185,129,0.3)",
-                background: "rgba(16,185,129,0.1)",
-                color: BRAND.success,
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-              }}
-            >
-              🧮 Calculator
-            </button>
+            {showCalculator && (
+              <button
+                onClick={onOpenCalculator}
+                style={{
+                  flex: 1,
+                  padding: "12px 14px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(16,185,129,0.3)",
+                  background: "rgba(16,185,129,0.1)",
+                  color: BRAND.success,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                }}
+              >
+                🧮 Calculator
+              </button>
+            )}
             <button
               onClick={onAddToProject}
               style={{
