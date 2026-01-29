@@ -1064,6 +1064,63 @@ function AdvancedFiltersPanel({ filters, onFilterChange, allVendors, onClose }) 
 }
 
 // ==========================
+// FLOATING DROPS BACKGROUND COMPONENT
+// ==========================
+function FloatingDropsBackground() {
+  return (
+    <div style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 0,
+      overflow: "hidden",
+      pointerEvents: "none",
+    }}>
+      {/* Generate 20 floating drops with staggered animations */}
+      {[...Array(20)].map((_, i) => {
+        const animations = ["floatingDrop", "floatingDropAlt", "floatingDropSlow"];
+        const animationName = animations[i % 3];
+        const durations = [6.5, 5.8, 7.2];
+        const duration = durations[i % 3];
+        const delay = (i * 0.4) % (duration * 0.9); // Stagger delays
+        const leftPos = Math.random() * 100; // Random horizontal position
+        const size = 4 + Math.random() * 8; // Size 4-12px
+        
+        // Use brand colors for drops: primary red and secondary orange
+        const colors = [
+          "rgba(239, 68, 68, 0.4)",    // Primary red with transparency
+          "rgba(249, 115, 22, 0.35)",   // Secondary orange
+          "rgba(255, 107, 107, 0.38)",  // Red variant
+          "rgba(251, 191, 36, 0.3)",    // Gold accent
+        ];
+        const color = colors[i % colors.length];
+        
+        return (
+          <div
+            key={i}
+            style={{
+              position: "absolute",
+              width: size,
+              height: size,
+              borderRadius: "50%",
+              background: `radial-gradient(circle at 30% 30%, ${color}, transparent)`,
+              left: `${leftPos}%`,
+              bottom: "-20px",
+              filter: `drop-shadow(0 0 ${size * 1.5}px ${color.replace("0.", "0.6")}`,
+              animation: `${animationName} ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite`,
+              animationDelay: `${delay}s`,
+              opacity: 0.6,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+// ==========================
 // MAIN APP
 // ==========================
 export default function App() {
@@ -2853,6 +2910,8 @@ export default function App() {
     paddingLeft: "calc(12px + env(safe-area-inset-left))",
     paddingRight: "calc(12px + env(safe-area-inset-right))",
     overflowX: "hidden",
+    position: "relative",
+    zIndex: 1,
   };
 
   const topbar = {
@@ -3048,6 +3107,66 @@ export default function App() {
     @keyframes shine {
       0% { left: -100%; }
       100% { left: 200%; }
+    }
+    @keyframes floatingDrop {
+      0% {
+        transform: translateY(0) translateX(0) rotate(0deg) scale(1);
+        opacity: 0.1;
+      }
+      10% {
+        opacity: 0.4;
+      }
+      50% {
+        transform: translateY(-300px) translateX(40px) rotate(180deg) scale(0.8);
+        opacity: 0.6;
+      }
+      90% {
+        opacity: 0.2;
+      }
+      100% {
+        transform: translateY(-600px) translateX(80px) rotate(360deg) scale(0.5);
+        opacity: 0;
+      }
+    }
+    @keyframes floatingDropAlt {
+      0% {
+        transform: translateY(0) translateX(0) rotate(0deg) scale(1);
+        opacity: 0.08;
+      }
+      10% {
+        opacity: 0.35;
+      }
+      50% {
+        transform: translateY(-280px) translateX(-50px) rotate(180deg) scale(0.75);
+        opacity: 0.5;
+      }
+      90% {
+        opacity: 0.15;
+      }
+      100% {
+        transform: translateY(-550px) translateX(-90px) rotate(360deg) scale(0.4);
+        opacity: 0;
+      }
+    }
+    @keyframes floatingDropSlow {
+      0% {
+        transform: translateY(0) translateX(0) rotate(0deg) scale(1);
+        opacity: 0.12;
+      }
+      10% {
+        opacity: 0.38;
+      }
+      50% {
+        transform: translateY(-320px) translateX(-30px) rotate(180deg) scale(0.85);
+        opacity: 0.55;
+      }
+      90% {
+        opacity: 0.18;
+      }
+      100% {
+        transform: translateY(-620px) translateX(-60px) rotate(360deg) scale(0.45);
+        opacity: 0;
+      }
     }
 
     /* ====== BASE STYLES - ULTRA PREMIUM ====== */
@@ -3474,6 +3593,9 @@ export default function App() {
   return (
     <div style={layout}>
       <style>{GLOBAL_CSS}</style>
+
+      {/* Floating Drops Background Animation */}
+      <FloatingDropsBackground />
 
       <div style={shell}>
         <div style={{
