@@ -6,6 +6,7 @@ import { StatusBar, Style } from "@capacitor/status-bar";
 import { Browser } from "@capacitor/browser";
 import { Preferences } from "@capacitor/preferences";
 import OneSignal from "onesignal-cordova-plugin";
+import { BarcodeScanner, BarcodeFormat } from "@capacitor-mlkit/barcode-scanning";
 
 /**
  * Ace Fixings — Single-file Capacitor + React App.jsx
@@ -314,6 +315,8 @@ const K = {
   PKCE: "acefixings_pkce",
   PROFILE: "acefixings_customer_profile",
   ORDERS_CACHE: "acefixings_orders_cache",
+  PROJECT_LISTS: "acefixings_project_lists",
+  FAVORITES: "acefixings_favorites",
 };
 
 // ==========================
@@ -1110,6 +1113,25 @@ export default function App() {
   
   // Quick reorder from recent
   const [recentlyOrdered, setRecentlyOrdered] = useState([]);
+  
+  // 🔷 PROJECT/JOB LISTS
+  const [projectLists, setProjectLists] = useState([]);
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [addToProjectProduct, setAddToProjectProduct] = useState(null);
+  const [selectedProjectForAdd, setSelectedProjectForAdd] = useState(null);
+  const [projectQuantity, setProjectQuantity] = useState(1);
+  
+  // 🔷 BARCODE SCANNER
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
+  
+  // 🔷 QUANTITY CALCULATOR
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [calcProduct, setCalcProduct] = useState(null);
+  const [calcArea, setCalcArea] = useState("");
+  const [calcSpacing, setCalcSpacing] = useState("200"); // mm between fixings
+  const [calcResult, setCalcResult] = useState(null);
   
   // Product specs/details
   const [productSpecs, setProductSpecs] = useState({});
@@ -2192,6 +2214,323 @@ export default function App() {
     });
     const isFav = favorites.some((p) => p.id === product.id);
     setToast(`${isFav ? "Removed from" : "Added to"} ❤️ Favorites`);
+  }
+
+  // ================================
+  // 🔷 PROJECT/JOB LISTS FUNCTIONS
+  // ================================
+  
+  // Load project lists from storage
+  useEffect(() => {
+    async function loadProjects() {
+      try {
+        const { value } = await Preferences.get({ key: K.PROJECT_LISTS });
+        if (value) {
+          setProjectLists(JSON.parse(value));
+        }
+      } catch (e) {
+        console.error("Failed to load projects:", e);
+      }
+    }
+    loadProjects();
+  }, []);
+  
+  // Save project lists when they change
+  useEffect(() => {
+    if (projectLists.length > 0) {
+      Preferences.set({ key: K.PROJECT_LISTS, value: JSON.stringify(projectLists) });
+    }
+  }, [projectLists]);
+  
+  // Load favorites from storage
+  useEffect(() => {
+    async function loadFavorites() {
+      try {
+        const { value } = await Preferences.get({ key: K.FAVORITES });
+        if (value) {
+          setFavorites(JSON.parse(value));
+        }
+      } catch (e) {
+        console.error("Failed to load favorites:", e);
+      }
+    }
+    loadFavorites();
+  }, []);
+  
+  // Save favorites when they change
+  useEffect(() => {
+    Preferences.set({ key: K.FAVORITES, value: JSON.stringify(favorites) });
+  }, [favorites]);
+  
+  function createProject(name) {
+    if (!name.trim()) return;
+    const newProject = {
+      id: Date.now().toString(),
+      name: name.trim(),
+      createdAt: new Date().toISOString(),
+      items: [],
+    };
+    setProjectLists((prev) => [...prev, newProject]);
+    setToast(`📁 Project "${name}" created!`);
+    setNewProjectName("");
+  }
+  
+  function deleteProject(projectId) {
+    setProjectLists((prev) => prev.filter((p) => p.id !== projectId));
+    setToast("Project deleted");
+  }
+  
+  function addProductToProject(projectId, product, quantity = 1) {
+    setProjectLists((prev) =>
+      prev.map((project) => {
+        if (project.id !== projectId) return project;
+        const existingItem = project.items.find((i) => i.productId === product.id);
+        if (existingItem) {
+          return {
+            ...project,
+            items: project.items.map((i) =>
+              i.productId === product.id
+                ? { ...i, quantity: i.quantity + quantity }
+                : i
+            ),
+          };
+        }
+        return {
+          ...project,
+          items: [
+            ...project.items,
+            {
+              productId: product.id,
+              variantId: product.variants?.[0]?.id,
+              title: product.title,
+              price: product.variants?.[0]?.price || 0,
+              image: product.images?.[0]?.src || product.featuredImage?.url,
+              quantity,
+            },
+          ],
+        };
+      })
+    );
+    const projectName = projectLists.find((p) => p.id === projectId)?.name || "Project";
+    setToast(`✓ Added to "${projectName}"`);
+  }
+  
+  function removeProductFromProject(projectId, productId) {
+    setProjectLists((prev) =>
+      prev.map((project) => {
+        if (project.id !== projectId) return project;
+        return {
+          ...project,
+          items: project.items.filter((i) => i.productId !== productId),
+        };
+      })
+    );
+  }
+  
+  function updateProjectItemQuantity(projectId, productId, newQty) {
+    if (newQty < 1) {
+      removeProductFromProject(projectId, productId);
+      return;
+    }
+    setProjectLists((prev) =>
+      prev.map((project) => {
+        if (project.id !== projectId) return project;
+        return {
+          ...project,
+          items: project.items.map((i) =>
+            i.productId === productId ? { ...i, quantity: newQty } : i
+          ),
+        };
+      })
+    );
+  }
+  
+  async function addProjectToCart(projectId) {
+    const project = projectLists.find((p) => p.id === projectId);
+    if (!project || project.items.length === 0) {
+      setToast("No items in project");
+      return;
+    }
+    try {
+      await ensureCartId();
+      for (const item of project.items) {
+        if (item.variantId) {
+          await cartAddLine(item.variantId, item.quantity);
+        }
+      }
+      setToast(`✓ ${project.items.length} items added to cart!`);
+      setView("cart");
+    } catch (e) {
+      setError(String(e?.message || e));
+    }
+  }
+  
+  function getProjectTotal(project) {
+    return project.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  }
+  
+  // ================================
+  // 🔷 BARCODE SCANNER FUNCTIONS
+  // ================================
+  
+  async function startBarcodeScanner() {
+    if (!isNative) {
+      setToast("Barcode scanner only works on mobile app");
+      return;
+    }
+    
+    try {
+      // Check permission
+      const { camera } = await BarcodeScanner.checkPermissions();
+      if (camera !== "granted") {
+        const { camera: newPermission } = await BarcodeScanner.requestPermissions();
+        if (newPermission !== "granted") {
+          setToast("Camera permission required for scanner");
+          return;
+        }
+      }
+      
+      setIsScanning(true);
+      
+      // Start scanning
+      const { barcodes } = await BarcodeScanner.scan({
+        formats: [
+          BarcodeFormat.QrCode,
+          BarcodeFormat.Ean13,
+          BarcodeFormat.Ean8,
+          BarcodeFormat.Code128,
+          BarcodeFormat.Code39,
+          BarcodeFormat.Upc,
+        ],
+      });
+      
+      setIsScanning(false);
+      
+      if (barcodes && barcodes.length > 0) {
+        const barcode = barcodes[0].rawValue;
+        setScanResult(barcode);
+        await searchProductByBarcode(barcode);
+      }
+    } catch (e) {
+      setIsScanning(false);
+      if (e.message?.includes("canceled")) {
+        // User cancelled - that's ok
+      } else {
+        setToast("Scanner error: " + (e.message || e));
+      }
+    }
+  }
+  
+  async function searchProductByBarcode(barcode) {
+    setToast(`🔍 Searching for: ${barcode}`);
+    
+    // Search in all products by title, sku, or barcode
+    // First load all collections to search through
+    const query = `{
+      products(first: 20, query: "${barcode}") {
+        edges {
+          node {
+            id
+            title
+            handle
+            vendor
+            productType
+            featuredImage { url }
+            variants(first: 5) {
+              edges {
+                node {
+                  id
+                  title
+                  sku
+                  barcode
+                  price { amount currencyCode }
+                  compareAtPrice { amount currencyCode }
+                  quantityAvailable
+                }
+              }
+            }
+          }
+        }
+      }
+    }`;
+    
+    try {
+      const resp = await shopifyStorefront(query);
+      const products = resp?.products?.edges?.map((e) => normalizeProduct(e.node)) || [];
+      
+      if (products.length > 0) {
+        // Found exact match - go to product
+        setSelectedProduct(products[0]);
+        setView("product");
+        setToast(`✓ Found: ${products[0].title}`);
+      } else {
+        // Try broader search with the barcode as text
+        setSearch(barcode);
+        setView("home");
+        setToast(`No exact match - searching for "${barcode}"`);
+      }
+    } catch (e) {
+      setToast("Search failed: " + (e.message || e));
+    }
+  }
+  
+  // ================================
+  // 🔷 QUANTITY CALCULATOR FUNCTIONS
+  // ================================
+  
+  function openCalculator(product) {
+    setCalcProduct(product);
+    setCalcArea("");
+    setCalcSpacing("200");
+    setCalcResult(null);
+    setShowCalculator(true);
+  }
+  
+  function calculateQuantity() {
+    if (!calcArea || !calcSpacing || !calcProduct) return;
+    
+    const area = parseFloat(calcArea);
+    const spacing = parseFloat(calcSpacing);
+    
+    if (isNaN(area) || isNaN(spacing) || spacing <= 0) {
+      setToast("Please enter valid numbers");
+      return;
+    }
+    
+    // Calculate fixings needed per m²
+    // Formula: (1000/spacing)² = fixings per m²
+    const fixingsPerM2 = Math.pow(1000 / spacing, 2);
+    const totalFixings = Math.ceil(area * fixingsPerM2);
+    
+    // Assume pack sizes (can be enhanced with real product data)
+    const packSizes = [10, 25, 50, 100, 200, 500, 1000];
+    let recommendedPacks = [];
+    let remaining = totalFixings;
+    
+    // Greedy algorithm for pack recommendation
+    for (const pack of packSizes.reverse()) {
+      if (remaining >= pack) {
+        const count = Math.floor(remaining / pack);
+        recommendedPacks.push({ size: pack, count });
+        remaining = remaining % pack;
+      }
+    }
+    if (remaining > 0) {
+      recommendedPacks.push({ size: packSizes[packSizes.length - 1], count: 1 });
+    }
+    
+    // Calculate cost
+    const unitPrice = calcProduct.variants?.[0]?.price || 0;
+    const totalCost = totalFixings * unitPrice;
+    
+    setCalcResult({
+      totalFixings,
+      fixingsPerM2: fixingsPerM2.toFixed(1),
+      recommendedPacks,
+      totalCost,
+      area,
+      spacing,
+    });
   }
 
   // Bulk pricing calculator
@@ -3313,6 +3652,54 @@ export default function App() {
                 }}
               />
             </div>
+            {/* Favorites Button */}
+            <Button
+              className="btn-glow"
+              variant="dark"
+              size="sm"
+              onClick={() => setView("favorites")}
+              title="View favorites"
+              style={{ 
+                height: 50, 
+                minWidth: 50, 
+                justifyContent: "center", 
+                gap: 6,
+                borderRadius: 16,
+                background: favorites.length > 0 
+                  ? "rgba(239,68,68,0.15)"
+                  : "rgba(255,255,255,0.05)",
+                boxShadow: favorites.length > 0 
+                  ? "0 8px 24px rgba(239,68,68,0.2), 0 0 1px rgba(255,255,255,0.2) inset" 
+                  : "0 4px 12px rgba(0,0,0,0.2), inset 0 1px 1px rgba(255,255,255,0.03)",
+                border: favorites.length > 0 
+                  ? "1px solid rgba(239,68,68,0.3)" 
+                  : "1px solid rgba(255,255,255,0.06)",
+                position: "relative",
+              }}
+            >
+              <span style={{ fontSize: 16 }}>{favorites.length > 0 ? "❤️" : "🤍"}</span>
+              {favorites.length > 0 && (
+                <span style={{
+                  position: "absolute",
+                  top: -4,
+                  right: -4,
+                  background: `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`,
+                  color: "#fff",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  minWidth: 18,
+                  height: 18,
+                  borderRadius: 9,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 2px 8px rgba(239,68,68,0.4)",
+                }}>
+                  {favorites.length}
+                </span>
+              )}
+            </Button>
+            {/* Cart Button */}
             <Button
               className="top-cart-btn btn-glow"
               variant="dark"
@@ -3829,6 +4216,13 @@ export default function App() {
                   setError(String(e?.message || e));
                 }
               }}
+              onOpenCalculator={() => openCalculator(activeProduct)}
+              onAddToProject={() => {
+                setAddToProjectProduct(activeProduct);
+                setProjectQuantity(1);
+              }}
+              isFavorited={isFavorited(activeProduct.id)}
+              onToggleFavorite={() => toggleFavorite(activeProduct)}
             />
           )}
 
@@ -4066,6 +4460,185 @@ export default function App() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ================================ */}
+          {/* 📁 PROJECTS VIEW */}
+          {/* ================================ */}
+          {view === "projects" && (
+            <div className="view-anim">
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center", marginBottom: 20 }}>
+                <div>
+                  <div style={{ fontSize: 20, fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
+                    📁 Job Lists
+                  </div>
+                  <div style={{ fontSize: 12, color: BRAND.muted, fontWeight: 600, marginTop: 4 }}>
+                    {projectLists.length} project{projectLists.length !== 1 ? "s" : ""} • Save products for each job
+                  </div>
+                </div>
+                <Button variant="ghost" onClick={() => setView("home")} icon="←">
+                  Back
+                </Button>
+              </div>
+
+              {/* Create New Project */}
+              <div style={{
+                padding: 16,
+                borderRadius: 16,
+                background: "linear-gradient(135deg, rgba(139,92,246,0.1), rgba(139,92,246,0.05))",
+                border: "1px solid rgba(139,92,246,0.2)",
+                marginBottom: 20,
+              }}>
+                <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 10, color: BRAND.accent }}>
+                  ✨ Create New Project
+                </div>
+                <div style={{ display: "flex", gap: 10 }}>
+                  <input
+                    type="text"
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    placeholder="e.g. Kitchen Reno - 42 Oak Drive"
+                    className="premium-input"
+                    style={{ flex: 1 }}
+                    onKeyPress={(e) => e.key === "Enter" && createProject(newProjectName)}
+                  />
+                  <Button 
+                    variant="primary" 
+                    onClick={() => createProject(newProjectName)}
+                    disabled={!newProjectName.trim()}
+                  >
+                    Create
+                  </Button>
+                </div>
+              </div>
+
+              {/* Project List */}
+              {projectLists.length === 0 ? (
+                <EmptyState
+                  icon="📁"
+                  title="No projects yet"
+                  description="Create job lists to organize products for each project"
+                  action={null}
+                />
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {projectLists.map((project, idx) => (
+                    <div
+                      key={project.id}
+                      style={{
+                        padding: 16,
+                        borderRadius: 16,
+                        background: BRAND.card,
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        animation: `cardSlideIn 0.4s ease ${idx * 50}ms backwards`,
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                        <div>
+                          <div style={{ fontSize: 16, fontWeight: 700 }}>{project.name}</div>
+                          <div style={{ fontSize: 11, color: BRAND.muted, marginTop: 4 }}>
+                            {project.items.length} item{project.items.length !== 1 ? "s" : ""} • Created {new Date(project.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => deleteProject(project.id)}
+                          style={{
+                            background: "rgba(220,38,38,0.1)",
+                            border: "1px solid rgba(220,38,38,0.2)",
+                            borderRadius: 8,
+                            padding: "6px 10px",
+                            color: "#f87171",
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: "pointer",
+                          }}
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
+
+                      {/* Project Items */}
+                      {project.items.length > 0 && (
+                        <div style={{ marginBottom: 12 }}>
+                          {project.items.slice(0, 3).map((item) => (
+                            <div
+                              key={item.productId}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 10,
+                                padding: 10,
+                                background: "rgba(255,255,255,0.02)",
+                                borderRadius: 10,
+                                marginBottom: 6,
+                              }}
+                            >
+                              <div style={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: 8,
+                                background: "#111",
+                                overflow: "hidden",
+                                flexShrink: 0,
+                              }}>
+                                {item.image ? (
+                                  <img src={item.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                ) : (
+                                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: BRAND.muted }}>📦</div>
+                                )}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {item.title}
+                                </div>
+                                <div style={{ fontSize: 11, color: BRAND.muted }}>
+                                  Qty: {item.quantity} • {displayPrice(item.price * item.quantity)}
+                                </div>
+                              </div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <button
+                                  onClick={() => updateProjectItemQuantity(project.id, item.productId, item.quantity - 1)}
+                                  style={{ width: 24, height: 24, borderRadius: 6, background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", cursor: "pointer" }}
+                                >−</button>
+                                <span style={{ fontSize: 12, fontWeight: 700, minWidth: 20, textAlign: "center" }}>{item.quantity}</span>
+                                <button
+                                  onClick={() => updateProjectItemQuantity(project.id, item.productId, item.quantity + 1)}
+                                  style={{ width: 24, height: 24, borderRadius: 6, background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", cursor: "pointer" }}
+                                >+</button>
+                              </div>
+                            </div>
+                          ))}
+                          {project.items.length > 3 && (
+                            <div style={{ fontSize: 11, color: BRAND.muted, textAlign: "center", padding: 6 }}>
+                              +{project.items.length - 3} more items
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Project Total & Actions */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                        <div>
+                          <div style={{ fontSize: 11, color: BRAND.muted }}>Project Total</div>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: BRAND.success }}>
+                            {displayPrice(getProjectTotal(project))}
+                          </div>
+                        </div>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => addProjectToCart(project.id)}
+                          disabled={project.items.length === 0}
+                          icon="🛒"
+                        >
+                          Add All to Cart
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -4665,16 +5238,52 @@ export default function App() {
               <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Home</span>
             </button>
 
+            {/* BARCODE SCANNER BUTTON */}
             <button
               type="button"
-              style={navBtn(view === "collection" || view === "product")}
-              onClick={() => {
-                if (activeCollection) setView("collection");
-                else setView("home");
+              style={{
+                ...navBtn(isScanning),
+                background: isScanning 
+                  ? `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`
+                  : "transparent",
               }}
+              onClick={startBarcodeScanner}
             >
-              <span style={{ fontSize: 18 }}>📦</span>
-              <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Browse</span>
+              <span style={{ fontSize: 18 }}>{isScanning ? "⏳" : "📷"}</span>
+              <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Scan</span>
+            </button>
+
+            {/* PROJECTS BUTTON */}
+            <button
+              type="button"
+              style={{
+                ...navBtn(view === "projects"),
+                position: "relative",
+              }}
+              onClick={() => setView("projects")}
+            >
+              <span style={{ fontSize: 18 }}>📁</span>
+              <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Projects</span>
+              {projectLists.length > 0 && (
+                <span style={{
+                  position: "absolute",
+                  top: 4,
+                  right: "calc(50% - 18px)",
+                  minWidth: 16,
+                  height: 16,
+                  padding: "0 4px",
+                  background: view === "projects" ? "#fff" : BRAND.accent,
+                  color: view === "projects" ? BRAND.accent : "#fff",
+                  borderRadius: 99,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}>
+                  {projectLists.length}
+                </span>
+              )}
             </button>
 
             <button
@@ -4716,28 +5325,362 @@ export default function App() {
               )}
             </button>
 
-            <button
-              type="button"
-              style={navBtn(view === "orders" || view === "orderDetail")}
-              onClick={() => {
-                if (!auth) {
-                  setToast("Login to view orders");
-                  setView("account");
-                  return;
-                }
-                setView("orders");
-              }}
-            >
-              <span style={{ fontSize: 18 }}>📋</span>
-              <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Orders</span>
-            </button>
-
             <button type="button" style={navBtn(view === "account")} onClick={() => setView("account")}>
               <span style={{ fontSize: 18 }}>👤</span>
               <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Account</span>
             </button>
           </div>
         </div>
+
+        {/* ================================ */}
+        {/* 🧮 QUANTITY CALCULATOR MODAL */}
+        {/* ================================ */}
+        {showCalculator && calcProduct && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.85)",
+            backdropFilter: "blur(8px)",
+            zIndex: 30000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            animation: "fadeIn 0.2s ease",
+          }}>
+            <div style={{
+              background: BRAND.card,
+              borderRadius: 24,
+              padding: 24,
+              maxWidth: 400,
+              width: "100%",
+              maxHeight: "80vh",
+              overflow: "auto",
+              border: "1px solid rgba(255,255,255,0.1)",
+              animation: "scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
+                    🧮 Quantity Calculator
+                  </div>
+                  <div style={{ fontSize: 12, color: BRAND.muted, marginTop: 4 }}>
+                    Calculate how many you need
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCalculator(false)}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
+                    background: "rgba(255,255,255,0.1)",
+                    border: "none",
+                    color: "#fff",
+                    fontSize: 16,
+                    cursor: "pointer",
+                  }}
+                >×</button>
+              </div>
+
+              <div style={{
+                padding: 12,
+                borderRadius: 12,
+                background: "rgba(255,255,255,0.03)",
+                marginBottom: 20,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}>
+                <div style={{ width: 50, height: 50, borderRadius: 10, background: "#111", overflow: "hidden" }}>
+                  {calcProduct.images?.[0]?.url ? (
+                    <img src={calcProduct.images[0].url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>📦</div>
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{calcProduct.title}</div>
+                  <div style={{ fontSize: 12, color: BRAND.success }}>{displayPrice(calcProduct.variants?.[0]?.price || 0)}/unit</div>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 6, display: "block", fontWeight: 600 }}>
+                  Area to cover (m²)
+                </label>
+                <input
+                  type="number"
+                  value={calcArea}
+                  onChange={(e) => setCalcArea(e.target.value)}
+                  placeholder="e.g. 25"
+                  className="premium-input"
+                  style={{ width: "100%", boxSizing: "border-box" }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 6, display: "block", fontWeight: 600 }}>
+                  Spacing between fixings (mm)
+                </label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {["150", "200", "250", "300", "400", "500"].map((spacing) => (
+                    <button
+                      key={spacing}
+                      onClick={() => setCalcSpacing(spacing)}
+                      style={{
+                        padding: "8px 14px",
+                        borderRadius: 10,
+                        border: calcSpacing === spacing ? `2px solid ${BRAND.primary}` : "1px solid rgba(255,255,255,0.1)",
+                        background: calcSpacing === spacing ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.03)",
+                        color: "#fff",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {spacing}mm
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Button
+                variant="primary"
+                onClick={calculateQuantity}
+                style={{ width: "100%", marginBottom: 16 }}
+                disabled={!calcArea || !calcSpacing}
+              >
+                Calculate
+              </Button>
+
+              {calcResult && (
+                <div style={{
+                  padding: 16,
+                  borderRadius: 14,
+                  background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))",
+                  border: "1px solid rgba(16,185,129,0.3)",
+                }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: BRAND.success, marginBottom: 12 }}>
+                    📊 Results
+                  </div>
+                  
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                    <div style={{ padding: 12, background: "rgba(0,0,0,0.2)", borderRadius: 10 }}>
+                      <div style={{ fontSize: 11, color: BRAND.muted }}>Area</div>
+                      <div style={{ fontSize: 16, fontWeight: 700 }}>{calcResult.area} m²</div>
+                    </div>
+                    <div style={{ padding: 12, background: "rgba(0,0,0,0.2)", borderRadius: 10 }}>
+                      <div style={{ fontSize: 11, color: BRAND.muted }}>Spacing</div>
+                      <div style={{ fontSize: 16, fontWeight: 700 }}>{calcResult.spacing}mm</div>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: 14, background: "rgba(0,0,0,0.3)", borderRadius: 12, marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, color: BRAND.muted, marginBottom: 4 }}>Total Fixings Needed</div>
+                    <div style={{ fontSize: 28, fontWeight: 800, color: "#fff" }}>
+                      {calcResult.totalFixings.toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: 11, color: BRAND.muted }}>
+                      ({calcResult.fixingsPerM2} per m²)
+                    </div>
+                  </div>
+
+                  <div style={{ padding: 14, background: "rgba(0,0,0,0.3)", borderRadius: 12 }}>
+                    <div style={{ fontSize: 11, color: BRAND.muted, marginBottom: 4 }}>Estimated Cost</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: BRAND.success }}>
+                      {displayPrice(calcResult.totalCost)}
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    onClick={async () => {
+                      const variantId = calcProduct.variants?.[0]?.id;
+                      if (variantId) {
+                        await ensureCartId();
+                        await cartAddLine(variantId, calcResult.totalFixings);
+                        setToast(`✓ ${calcResult.totalFixings} items added to cart!`);
+                        setShowCalculator(false);
+                        setView("cart");
+                      }
+                    }}
+                    style={{ width: "100%", marginTop: 16 }}
+                    icon="🛒"
+                  >
+                    Add {calcResult.totalFixings} to Cart
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ================================ */}
+        {/* 📁 ADD TO PROJECT MODAL */}
+        {/* ================================ */}
+        {addToProjectProduct && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.85)",
+            backdropFilter: "blur(8px)",
+            zIndex: 30000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            animation: "fadeIn 0.2s ease",
+          }}>
+            <div style={{
+              background: BRAND.card,
+              borderRadius: 24,
+              padding: 24,
+              maxWidth: 400,
+              width: "100%",
+              maxHeight: "80vh",
+              overflow: "auto",
+              border: "1px solid rgba(255,255,255,0.1)",
+              animation: "scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <div style={{ fontSize: 18, fontWeight: 800 }}>📁 Add to Project</div>
+                <button
+                  onClick={() => { setAddToProjectProduct(null); setSelectedProjectForAdd(null); }}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
+                    background: "rgba(255,255,255,0.1)",
+                    border: "none",
+                    color: "#fff",
+                    fontSize: 16,
+                    cursor: "pointer",
+                  }}
+                >×</button>
+              </div>
+
+              {/* Product Preview */}
+              <div style={{
+                padding: 12,
+                borderRadius: 12,
+                background: "rgba(255,255,255,0.03)",
+                marginBottom: 16,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}>
+                <div style={{ width: 50, height: 50, borderRadius: 10, background: "#111", overflow: "hidden" }}>
+                  {addToProjectProduct.images?.[0]?.url ? (
+                    <img src={addToProjectProduct.images[0].url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>📦</div>
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{addToProjectProduct.title}</div>
+                  <div style={{ fontSize: 12, color: BRAND.success }}>{displayPrice(addToProjectProduct.variants?.[0]?.price || 0)}</div>
+                </div>
+              </div>
+
+              {/* Quantity Selector */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 8, display: "block", fontWeight: 600 }}>
+                  Quantity
+                </label>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <button
+                    onClick={() => setProjectQuantity(Math.max(1, projectQuantity - 1))}
+                    style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", fontSize: 18, cursor: "pointer" }}
+                  >−</button>
+                  <input
+                    type="number"
+                    value={projectQuantity}
+                    onChange={(e) => setProjectQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="premium-input"
+                    style={{ width: 80, textAlign: "center" }}
+                  />
+                  <button
+                    onClick={() => setProjectQuantity(projectQuantity + 1)}
+                    style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", fontSize: 18, cursor: "pointer" }}
+                  >+</button>
+                </div>
+              </div>
+
+              {/* Select Project */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 8, display: "block", fontWeight: 600 }}>
+                  Select Project
+                </label>
+                {projectLists.length === 0 ? (
+                  <div style={{ padding: 16, textAlign: "center", background: "rgba(255,255,255,0.03)", borderRadius: 12 }}>
+                    <div style={{ fontSize: 13, color: BRAND.muted, marginBottom: 10 }}>No projects yet</div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <input
+                        type="text"
+                        value={newProjectName}
+                        onChange={(e) => setNewProjectName(e.target.value)}
+                        placeholder="New project name..."
+                        className="premium-input"
+                        style={{ flex: 1 }}
+                      />
+                      <Button variant="primary" size="sm" onClick={() => createProject(newProjectName)}>Create</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {projectLists.map((project) => (
+                      <button
+                        key={project.id}
+                        onClick={() => setSelectedProjectForAdd(project.id)}
+                        style={{
+                          padding: 12,
+                          borderRadius: 12,
+                          border: selectedProjectForAdd === project.id 
+                            ? `2px solid ${BRAND.accent}` 
+                            : "1px solid rgba(255,255,255,0.1)",
+                          background: selectedProjectForAdd === project.id 
+                            ? "rgba(139,92,246,0.15)" 
+                            : "rgba(255,255,255,0.03)",
+                          textAlign: "left",
+                          cursor: "pointer",
+                          color: "#fff",
+                        }}
+                      >
+                        <div style={{ fontSize: 14, fontWeight: 600 }}>{project.name}</div>
+                        <div style={{ fontSize: 11, color: BRAND.muted, marginTop: 2 }}>
+                          {project.items.length} items
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <Button
+                variant="primary"
+                onClick={() => {
+                  if (selectedProjectForAdd) {
+                    addProductToProject(selectedProjectForAdd, addToProjectProduct, projectQuantity);
+                    setAddToProjectProduct(null);
+                    setSelectedProjectForAdd(null);
+                    setProjectQuantity(1);
+                  }
+                }}
+                disabled={!selectedProjectForAdd}
+                style={{ width: "100%" }}
+              >
+                Add to Project
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* TOAST */}
         {toast ? (
@@ -4931,7 +5874,7 @@ export default function App() {
 // ==========================
 // PRODUCT VIEW COMPONENT
 // ==========================
-function ProductView({ product, collectionProducts, setActiveProduct, setView, onBack, vatLabel, displayPrice, displayCompareAt, onAdd }) {
+function ProductView({ product, collectionProducts, setActiveProduct, setView, onBack, vatLabel, displayPrice, displayCompareAt, onAdd, onOpenCalculator, onAddToProject, isFavorited, onToggleFavorite }) {
   const [qty, setQty] = useState(1);
   const [variantId, setVariantId] = useState(product?.variants?.[0]?.id || "");
   const [isAdding, setIsAdding] = useState(false);
@@ -4948,9 +5891,30 @@ function ProductView({ product, collectionProducts, setActiveProduct, setView, o
             {vatLabel}
           </div>
         </div>
-        <Button variant="ghost" onClick={onBack} icon="←">
-          Back
-        </Button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {/* Favorite Button */}
+          <button
+            onClick={onToggleFavorite}
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              border: isFavorited ? "1px solid rgba(239,68,68,0.3)" : "1px solid #333",
+              background: isFavorited ? "rgba(239,68,68,0.15)" : "rgba(255,255,255,0.05)",
+              color: "#fff",
+              fontSize: 18,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {isFavorited ? "❤️" : "🤍"}
+          </button>
+          <Button variant="ghost" onClick={onBack} icon="←">
+            Back
+          </Button>
+        </div>
       </div>
 
       <div style={{ height: 12 }} />
@@ -5068,6 +6032,50 @@ function ProductView({ product, collectionProducts, setActiveProduct, setView, o
             >
               {variant?.availableForSale ? "Add to cart" : "Out of stock"}
             </Button>
+          </div>
+
+          {/* Pro Feature Buttons */}
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button
+              onClick={onOpenCalculator}
+              style={{
+                flex: 1,
+                padding: "12px 14px",
+                borderRadius: 12,
+                border: "1px solid rgba(16,185,129,0.3)",
+                background: "rgba(16,185,129,0.1)",
+                color: BRAND.success,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+              }}
+            >
+              🧮 Calculator
+            </button>
+            <button
+              onClick={onAddToProject}
+              style={{
+                flex: 1,
+                padding: "12px 14px",
+                borderRadius: 12,
+                border: "1px solid rgba(139,92,246,0.3)",
+                background: "rgba(139,92,246,0.1)",
+                color: BRAND.accent,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+              }}
+            >
+              📁 Add to Project
+            </button>
           </div>
 
           <div style={{ height: 14 }} />
