@@ -6,7 +6,7 @@ import { StatusBar, Style } from "@capacitor/status-bar";
 import { Browser } from "@capacitor/browser";
 import { Preferences } from "@capacitor/preferences";
 import OneSignal from "onesignal-cordova-plugin";
-import { BarcodeScanner, BarcodeFormat } from "@capacitor-mlkit/barcode-scanning";
+// Barcode scanner removed - not needed
 
 /**
  * Ace Fixings — Single-file Capacitor + React App.jsx
@@ -41,7 +41,7 @@ const BRAND = {
   primaryGlow: "rgba(239, 68, 68, 0.5)",
   secondary: "#f97316",
   secondaryGlow: "rgba(249, 115, 22, 0.4)",
-  accent: "#8b5cf6",
+  accent: "#f65c5c",
   accentGlow: "rgba(139, 92, 246, 0.4)",
   success: "#10b981",
   successGlow: "rgba(16, 185, 129, 0.4)",
@@ -1122,9 +1122,8 @@ export default function App() {
   const [selectedProjectForAdd, setSelectedProjectForAdd] = useState(null);
   const [projectQuantity, setProjectQuantity] = useState(1);
   
-  // 🔷 BARCODE SCANNER
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanResult, setScanResult] = useState(null);
+  // 🔷 BARCODE SCANNER - REMOVED
+  // Scanner feature removed per user request
   
   // 🔷 QUANTITY CALCULATOR
   const [showCalculator, setShowCalculator] = useState(false);
@@ -1735,18 +1734,7 @@ export default function App() {
           }
         }
 
-        // Request camera permission early (for barcode scanner)
-        if (isNative) {
-          try {
-            const { camera } = await BarcodeScanner.checkPermissions();
-            if (camera === "prompt" || camera === "prompt-with-rationale") {
-              // Will be prompted when they first use the scanner
-              console.log("[Camera] Permission will be requested on first scan");
-            }
-          } catch (e) {
-            console.log("[Camera] Permission check error:", e);
-          }
-        }
+
 
         const savedVat = await Preferences.get({ key: K.VAT_MODE });
         if (savedVat?.value === "inc" || savedVat?.value === "ex") setVatMode(savedVat.value);
@@ -2252,11 +2240,9 @@ export default function App() {
     loadProjects();
   }, []);
   
-  // Save project lists when they change
+  // Save project lists when they change (including empty state)
   useEffect(() => {
-    if (projectLists.length > 0) {
-      Preferences.set({ key: K.PROJECT_LISTS, value: JSON.stringify(projectLists) });
-    }
+    Preferences.set({ key: K.PROJECT_LISTS, value: JSON.stringify(projectLists) });
   }, [projectLists]);
   
   // Load favorites from storage
@@ -2293,7 +2279,12 @@ export default function App() {
   }
   
   function deleteProject(projectId) {
-    setProjectLists((prev) => prev.filter((p) => p.id !== projectId));
+    setProjectLists((prev) => {
+      const updated = prev.filter((p) => p.id !== projectId);
+      // Force save immediately even if empty
+      Preferences.set({ key: K.PROJECT_LISTS, value: JSON.stringify(updated) });
+      return updated;
+    });
     setToast("Project deleted");
   }
   
@@ -2387,109 +2378,9 @@ export default function App() {
   }
   
   // ================================
-  // 🔷 BARCODE SCANNER FUNCTIONS
+  // 🔷 BARCODE SCANNER FUNCTIONS - REMOVED
+  // Scanner feature removed per user request
   // ================================
-  
-  async function startBarcodeScanner() {
-    if (!isNative) {
-      setToast("Barcode scanner only works on mobile app");
-      return;
-    }
-    
-    try {
-      // Check permission
-      const { camera } = await BarcodeScanner.checkPermissions();
-      if (camera !== "granted") {
-        const { camera: newPermission } = await BarcodeScanner.requestPermissions();
-        if (newPermission !== "granted") {
-          setToast("Camera permission required for scanner");
-          return;
-        }
-      }
-      
-      setIsScanning(true);
-      
-      // Start scanning
-      const { barcodes } = await BarcodeScanner.scan({
-        formats: [
-          BarcodeFormat.QrCode,
-          BarcodeFormat.Ean13,
-          BarcodeFormat.Ean8,
-          BarcodeFormat.Code128,
-          BarcodeFormat.Code39,
-          BarcodeFormat.Upc,
-        ],
-      });
-      
-      setIsScanning(false);
-      
-      if (barcodes && barcodes.length > 0) {
-        const barcode = barcodes[0].rawValue;
-        setScanResult(barcode);
-        await searchProductByBarcode(barcode);
-      }
-    } catch (e) {
-      setIsScanning(false);
-      if (e.message?.includes("canceled")) {
-        // User cancelled - that's ok
-      } else {
-        setToast("Scanner error: " + (e.message || e));
-      }
-    }
-  }
-  
-  async function searchProductByBarcode(barcode) {
-    setToast(`🔍 Searching for: ${barcode}`);
-    
-    // Search in all products by title, sku, or barcode
-    // First load all collections to search through
-    const query = `{
-      products(first: 20, query: "${barcode}") {
-        edges {
-          node {
-            id
-            title
-            handle
-            vendor
-            productType
-            featuredImage { url }
-            variants(first: 5) {
-              edges {
-                node {
-                  id
-                  title
-                  sku
-                  barcode
-                  price { amount currencyCode }
-                  compareAtPrice { amount currencyCode }
-                  quantityAvailable
-                }
-              }
-            }
-          }
-        }
-      }
-    }`;
-    
-    try {
-      const resp = await shopifyStorefront(query);
-      const products = resp?.products?.edges?.map((e) => normalizeProduct(e.node)) || [];
-      
-      if (products.length > 0) {
-        // Found exact match - go to product
-        setSelectedProduct(products[0]);
-        setView("product");
-        setToast(`✓ Found: ${products[0].title}`);
-      } else {
-        // Try broader search with the barcode as text
-        setSearch(barcode);
-        setView("home");
-        setToast(`No exact match - searching for "${barcode}"`);
-      }
-    } catch (e) {
-      setToast("Search failed: " + (e.message || e));
-    }
-  }
   
   // ================================
   // 🔷 QUANTITY CALCULATOR FUNCTIONS
@@ -2560,9 +2451,10 @@ export default function App() {
       recommendedPacks.push({ size: packSizes[packSizes.length - 1], count: 1 });
     }
     
-    // Calculate cost
+    // Calculate cost based on recommended packs
+    // unitPrice is already the price per box/unit, so just multiply by count
     const unitPrice = calcProduct.variants?.[0]?.price || 0;
-    const totalCost = totalFixings * unitPrice;
+    const totalCost = recommendedPacks.reduce((sum, pack) => sum + (pack.count * unitPrice), 0);
     
     setCalcResult({
       totalFixings,
@@ -5280,20 +5172,7 @@ export default function App() {
               <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Home</span>
             </button>
 
-            {/* BARCODE SCANNER BUTTON */}
-            <button
-              type="button"
-              style={{
-                ...navBtn(isScanning),
-                background: isScanning 
-                  ? `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`
-                  : "transparent",
-              }}
-              onClick={startBarcodeScanner}
-            >
-              <span style={{ fontSize: 18 }}>{isScanning ? "⏳" : "📷"}</span>
-              <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Scan</span>
-            </button>
+
 
             {/* PROJECTS BUTTON */}
             <button
@@ -5366,6 +5245,18 @@ export default function App() {
                 </span>
               )}
             </button>
+
+            {/* ORDERS BUTTON */}
+            {isNative && (
+              <button
+                type="button"
+                style={navBtn(view === "orders")}
+                onClick={() => setView("orders")}
+              >
+                <span style={{ fontSize: 18 }}>📋</span>
+                <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Orders</span>
+              </button>
+            )}
 
             <button type="button" style={navBtn(view === "account")} onClick={() => setView("account")}>
               <span style={{ fontSize: 18 }}>👤</span>
