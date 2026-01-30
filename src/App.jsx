@@ -1090,10 +1090,10 @@ function FloatingDropsBackground() {
         
         // Use brand colors for drops: primary red and secondary orange
         const colors = [
-          "rgba(239, 68, 68, 0.4)",    // Primary red with transparency
-          "rgba(249, 115, 22, 0.35)",   // Secondary orange
-          "rgba(255, 107, 107, 0.38)",  // Red variant
-          "rgba(251, 191, 36, 0.3)",    // Gold accent
+          "rgba(239, 68, 68, 0.7)",    // Primary red with higher transparency
+          "rgba(249, 115, 22, 0.65)",   // Secondary orange
+          "rgba(255, 107, 107, 0.72)",  // Red variant
+          "rgba(251, 191, 36, 0.6)",    // Gold accent
         ];
         const color = colors[i % colors.length];
         
@@ -1111,7 +1111,7 @@ function FloatingDropsBackground() {
               filter: `drop-shadow(0 0 ${size * 1.5}px ${color.replace("0.", "0.6")}`,
               animation: `${animationName} ${duration}s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite`,
               animationDelay: `${delay}s`,
-              opacity: 0.6,
+              opacity: 0.85,
             }}
           />
         );
@@ -3111,17 +3111,17 @@ export default function App() {
     @keyframes floatingDrop {
       0% {
         transform: translateY(0) translateX(0) rotate(0deg) scale(1);
-        opacity: 0.1;
+        opacity: 0.3;
       }
       10% {
-        opacity: 0.4;
+        opacity: 0.7;
       }
       50% {
         transform: translateY(-300px) translateX(40px) rotate(180deg) scale(0.8);
-        opacity: 0.6;
+        opacity: 0.9;
       }
       90% {
-        opacity: 0.2;
+        opacity: 0.4;
       }
       100% {
         transform: translateY(-600px) translateX(80px) rotate(360deg) scale(0.5);
@@ -3131,17 +3131,17 @@ export default function App() {
     @keyframes floatingDropAlt {
       0% {
         transform: translateY(0) translateX(0) rotate(0deg) scale(1);
-        opacity: 0.08;
+        opacity: 0.25;
       }
       10% {
-        opacity: 0.35;
+        opacity: 0.65;
       }
       50% {
         transform: translateY(-280px) translateX(-50px) rotate(180deg) scale(0.75);
-        opacity: 0.5;
+        opacity: 0.85;
       }
       90% {
-        opacity: 0.15;
+        opacity: 0.35;
       }
       100% {
         transform: translateY(-550px) translateX(-90px) rotate(360deg) scale(0.4);
@@ -3151,17 +3151,17 @@ export default function App() {
     @keyframes floatingDropSlow {
       0% {
         transform: translateY(0) translateX(0) rotate(0deg) scale(1);
-        opacity: 0.12;
+        opacity: 0.28;
       }
       10% {
-        opacity: 0.38;
+        opacity: 0.68;
       }
       50% {
         transform: translateY(-320px) translateX(-30px) rotate(180deg) scale(0.85);
-        opacity: 0.55;
+        opacity: 0.88;
       }
       90% {
-        opacity: 0.18;
+        opacity: 0.38;
       }
       100% {
         transform: translateY(-620px) translateX(-60px) rotate(360deg) scale(0.45);
