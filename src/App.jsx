@@ -1894,13 +1894,18 @@ export default function App() {
 
   // Periodically check for out-of-stock favorites that came back in stock (every 30 minutes)
   useEffect(() => {
-    if (outOfStockFavorites.length === 0) return;
+    if (!outOfStockFavorites || outOfStockFavorites.length === 0) return;
     
+    // Check immediately
     checkOutOfStockFavoritesAvailability();
-    const interval = setInterval(checkOutOfStockFavoritesAvailability, 30 * 60 * 1000); // 30 minutes
+    
+    // Set up interval for periodic checks
+    const interval = setInterval(() => {
+      checkOutOfStockFavoritesAvailability();
+    }, 30 * 60 * 1000); // 30 minutes
     
     return () => clearInterval(interval);
-  }, [outOfStockFavorites]);
+  }, []);
 
   // Auto-load orders when opening Orders hub (fast)
   useEffect(() => {
@@ -1912,11 +1917,15 @@ export default function App() {
 
   // Check for out-of-stock favorites that came back in stock and send notifications
   async function checkOutOfStockFavoritesAvailability() {
-    if (outOfStockFavorites.length === 0 || !favorites.length) return;
-    
+    // Get current state safely - read from state at call time
     try {
+      const currentOosF = outOfStockFavorites;
+      const currentFav = favorites;
+      
+      if (!currentOosF || currentOosF.length === 0 || !currentFav || currentFav.length === 0) return;
+      
       // Query the out-of-stock favorite products
-      const productIds = outOfStockFavorites.map((f) => `"gid://shopify/Product/${f.productId.split("/").pop()}"`).join(",");
+      const productIds = currentOosF.map((f) => `"gid://shopify/Product/${f.productId.split("/").pop()}"`).join(",");
       if (!productIds) return;
       
       const q = `
@@ -1940,12 +1949,12 @@ export default function App() {
         }
       `;
       
-      const data = await storefrontGraphql(q, { first: outOfStockFavorites.length });
+      const data = await storefrontGraphql(q, { first: currentOosF.length });
       const products = data?.products?.edges?.map((e) => e.node) || [];
       
       // Check which products are now in stock
       const nowInStock = [];
-      outOfStockFavorites.forEach((oosItem) => {
+      currentOosF.forEach((oosItem) => {
         const product = products.find((p) => p.id.includes(oosItem.productId));
         if (product?.variants?.edges?.[0]?.node?.quantityAvailable > 0) {
           nowInStock.push(oosItem);
