@@ -2351,26 +2351,29 @@ export default function App() {
   }
 
   function toggleFavorite(product) {
-    setFavorites((prev) => {
-      const isFav = prev.some((p) => p.id === product.id);
-      if (isFav) {
-        // Removing from favorites - also remove from out-of-stock tracking
-        setOutOfStockFavorites((oosF) => oosF.filter((item) => item.productId !== product.id));
-        return prev.filter((p) => p.id !== product.id);
-      }
+    const isFav = favorites.some((p) => p.id === product.id);
+    const isInStock = isProductInStock(product);
+    
+    if (isFav) {
+      // Removing from favorites - also remove from out-of-stock tracking
+      setFavorites((prev) => prev.filter((p) => p.id !== product.id));
+      setOutOfStockFavorites((oosF) => oosF.filter((item) => item.productId !== product.id));
+      setToast("Removed from ❤️ Favorites");
+    } else {
       // Adding to favorites
-      const isInStock = isProductInStock(product);
+      setFavorites((prev) => [...prev, product]);
+      
+      // Track this out-of-stock product for notifications
       if (!isInStock) {
-        // Track this out-of-stock product for notifications
         setOutOfStockFavorites((oosF) => [
           ...oosF,
           { productId: product.id, title: product.title }
         ]);
+        setToast("Added to ❤️ Favorites\n📬 You'll get a notification when it's back in stock!");
+      } else {
+        setToast("Added to ❤️ Favorites");
       }
-      return [...prev, product];
-    });
-    const isFav = favorites.some((p) => p.id === product.id);
-    setToast(`${isFav ? "Removed from" : "Added to"} ❤️ Favorites${!isFav && !isProductInStock(product) ? "\n📬 You'll get a notification when it's back in stock!" : ""}`);
+    }
   }
 
   // ================================
