@@ -1,7 +1,10 @@
 {
-  "name": "ace-fixings-app-prototype",
+  "name": "ace-fixings-app",
+  "description": "Premium fixings and hardware supplier app with calculator and project management",
+  "author": "Ace Fixings Ltd",
+  "license": "Proprietary",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

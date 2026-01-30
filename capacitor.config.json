@@ -1,7 +1,14 @@
 {
   "appId": "com.acefixings.app",
   "appName": "Ace Fixings",
-  "webDir": "dist"
+  "appVersion": "1.0.0",
+  "webDir": "dist",
+  "ios": {
+    "contentInset": "automatic"
+  },
+  "android": {
+    "allowMixedContent": true
+  }
 }
 
 
