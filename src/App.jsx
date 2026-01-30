@@ -2515,11 +2515,15 @@ export default function App() {
     const unitPrice = calcProduct.variants?.[0]?.price || 0;
     const totalCost = recommendedPacks.reduce((sum, pack) => sum + (pack.count * unitPrice), 0);
     
+    // Calculate total number of boxes needed
+    const totalBoxes = recommendedPacks.reduce((sum, pack) => sum + pack.count, 0);
+    
     setCalcResult({
       totalFixings,
       fixingsPerM2: fixingsPerM2.toFixed(1),
       recommendedPacks,
       totalCost,
+      totalBoxes,
       area,
       spacing,
     });
@@ -5561,8 +5565,9 @@ export default function App() {
                       const variantId = calcProduct.variants?.[0]?.id;
                       if (variantId) {
                         await ensureCartId();
-                        await cartAddLine(variantId, calcResult.totalFixings);
-                        setToast(`✓ ${calcResult.totalFixings} items added to cart!`);
+                        // Add boxes to cart, not individual items
+                        await cartAddLine(variantId, calcResult.totalBoxes);
+                        setToast(`✓ ${calcResult.totalBoxes} box(es) added to cart! (${calcResult.totalFixings.toLocaleString()} fixings)`);
                         setShowCalculator(false);
                         setView("cart");
                       }
@@ -5570,7 +5575,7 @@ export default function App() {
                     style={{ width: "100%", marginTop: 16 }}
                     icon="🛒"
                   >
-                    Add {calcResult.totalFixings} to Cart
+                    Add {calcResult.totalBoxes} Box{calcResult.totalBoxes !== 1 ? "es" : ""} to Cart
                   </Button>
                 </div>
               )}
