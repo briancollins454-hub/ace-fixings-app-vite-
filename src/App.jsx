@@ -1161,9 +1161,6 @@ export default function App() {
   // Wishlist/Favorites
   const [favorites, setFavorites] = useState([]);
   
-  // Track out-of-stock favorites for notifications (stores { productId, variantId, title })
-  const [outOfStockFavorites, setOutOfStockFavorites] = useState([]);
-  
   // Quick reorder from recent
   const [recentlyOrdered, setRecentlyOrdered] = useState([]);
   
@@ -2273,27 +2270,15 @@ export default function App() {
 
   function toggleFavorite(product) {
     const isFav = favorites.some((p) => p.id === product.id);
-    const isInStock = isProductInStock(product);
     
     if (isFav) {
-      // Removing from favorites - also remove from out-of-stock tracking
+      // Removing from favorites
       setFavorites((prev) => prev.filter((p) => p.id !== product.id));
-      setOutOfStockFavorites((oosF) => oosF.filter((item) => item.productId !== product.id));
       setToast("Removed from ❤️ Favorites");
     } else {
       // Adding to favorites
       setFavorites((prev) => [...prev, product]);
-      
-      // Track this out-of-stock product for notifications
-      if (!isInStock) {
-        setOutOfStockFavorites((oosF) => [
-          ...oosF,
-          { productId: product.id, title: product.title }
-        ]);
-        setToast("Added to ❤️ Favorites\n📬 You'll get a notification when it's back in stock!");
-      } else {
-        setToast("Added to ❤️ Favorites");
-      }
+      setToast("Added to ❤️ Favorites");
     }
   }
 
@@ -4244,7 +4229,6 @@ export default function App() {
                           <StockBadge 
                             available={v?.availableForSale} 
                             quantity={v?.quantityAvailable}
-                            isTracked={!v?.availableForSale && outOfStockFavorites?.some(f => f.productId === p.id)}
                           />
                           {v && <SavingsIndicator compareAtPrice={v.compareAtPrice} price={v.price} />}
                           <BulkPricingBadge quantity={10} discount={getBulkDiscount(10)} onClick={() => setShowBulkPricingInfo(true)} />
@@ -5927,7 +5911,6 @@ export default function App() {
                       <StockBadge 
                         available={quickViewProduct.variants[0].availableForSale} 
                         quantity={quickViewProduct.variants[0].quantityAvailable}
-                        isTracked={!quickViewProduct.variants[0].availableForSale && quickViewProduct?.variants?.[0] && outOfStockFavorites?.some(f => f.productId === quickViewProduct.id)}
                       />
                       <BulkPricingBadge quantity={10} discount={getBulkDiscount(10)} onClick={() => setShowBulkPricingInfo(true)} />
                     </>
@@ -6060,7 +6043,6 @@ function ProductView({ product, collectionProducts, setActiveProduct, setView, o
             <StockBadge 
               available={variant?.availableForSale} 
               quantity={variant?.quantityAvailable}
-              isTracked={!variant?.availableForSale && outOfStockFavorites?.some(f => f.productId === activeProduct.id)}
             />
             {variant && <SavingsIndicator compareAtPrice={variant.compareAtPrice} price={variant.price} />}
           </div>
