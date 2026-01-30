@@ -4323,7 +4323,7 @@ export default function App() {
                           <StockBadge 
                             available={v?.availableForSale} 
                             quantity={v?.quantityAvailable}
-                            isTracked={!v?.availableForSale && outOfStockFavorites.some(f => f.productId === p.id)}
+                            isTracked={!v?.availableForSale && outOfStockFavorites?.some(f => f.productId === p.id)}
                           />
                           {v && <SavingsIndicator compareAtPrice={v.compareAtPrice} price={v.price} />}
                           <BulkPricingBadge quantity={10} discount={getBulkDiscount(10)} onClick={() => setShowBulkPricingInfo(true)} />
@@ -6006,7 +6006,7 @@ export default function App() {
                       <StockBadge 
                         available={quickViewProduct.variants[0].availableForSale} 
                         quantity={quickViewProduct.variants[0].quantityAvailable}
-                        isTracked={!quickViewProduct.variants[0].availableForSale && outOfStockFavorites.some(f => f.productId === quickViewProduct.id)}
+                        isTracked={!quickViewProduct.variants[0].availableForSale && quickViewProduct?.variants?.[0] && outOfStockFavorites?.some(f => f.productId === quickViewProduct.id)}
                       />
                       <BulkPricingBadge quantity={10} discount={getBulkDiscount(10)} onClick={() => setShowBulkPricingInfo(true)} />
                     </>
@@ -6139,7 +6139,7 @@ function ProductView({ product, collectionProducts, setActiveProduct, setView, o
             <StockBadge 
               available={variant?.availableForSale} 
               quantity={variant?.quantityAvailable}
-              isTracked={!variant?.availableForSale && outOfStockFavorites.some(f => f.productId === activeProduct.id)}
+              isTracked={!variant?.availableForSale && outOfStockFavorites?.some(f => f.productId === activeProduct.id)}
             />
             {variant && <SavingsIndicator compareAtPrice={variant.compareAtPrice} price={variant.price} />}
           </div>
