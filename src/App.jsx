@@ -1864,10 +1864,12 @@ export default function App() {
         await loadCollections();
         await ensureCartId();
 
-        setBooted(true);
+        // Show splash screen for 3 seconds to let users appreciate the beautiful animation
+        setTimeout(() => setBooted(true), 3000);
       } catch (e) {
         setError(String(e?.message || e));
-        setBooted(true);
+        // Show splash screen for 3 seconds even on error
+        setTimeout(() => setBooted(true), 3000);
       }
     })();
 
@@ -3408,15 +3410,15 @@ export default function App() {
                 height: 4 + (i % 3) * 2,
                 borderRadius: "50%",
                 background: i % 2 === 0 
-                  ? `rgba(239,68,68,${0.15 + (i % 3) * 0.1})` 
-                  : `rgba(249,115,22,${0.1 + (i % 3) * 0.1})`,
+                  ? `rgba(239,68,68,${0.35 + (i % 3) * 0.15})` 
+                  : `rgba(249,115,22,${0.3 + (i % 3) * 0.15})`,
                 left: `${10 + (i * 7)}%`,
                 top: `${15 + (i * 6)}%`,
                 animation: `particleFloat ${3 + (i % 3)}s ease-in-out infinite`,
                 animationDelay: `${i * 0.2}s`,
                 boxShadow: i % 2 === 0 
-                  ? "0 0 15px rgba(239,68,68,0.4)" 
-                  : "0 0 12px rgba(249,115,22,0.3)",
+                  ? "0 0 25px rgba(239,68,68,0.7)" 
+                  : "0 0 20px rgba(249,115,22,0.6)",
               }} />
             ))}
           </div>
@@ -3430,9 +3432,10 @@ export default function App() {
             width: 300,
             height: 300,
             borderRadius: "50%",
-            background: `radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%)`,
+            background: `radial-gradient(circle, rgba(239,68,68,0.35) 0%, rgba(239,68,68,0.1) 50%, transparent 70%)`,
             animation: "pulseRing 3s ease-in-out infinite",
             pointerEvents: "none",
+            boxShadow: "0 0 80px rgba(239,68,68,0.4), 0 0 160px rgba(249,115,22,0.2)",
           }} />
 
           <div style={{ 
@@ -3458,8 +3461,9 @@ export default function App() {
                 right: -12,
                 bottom: -12,
                 borderRadius: 36,
-                border: "2px solid rgba(239,68,68,0.2)",
+                border: "2px solid rgba(239,68,68,0.5)",
                 animation: "borderGlow 2s ease-in-out infinite",
+                boxShadow: "0 0 40px rgba(239,68,68,0.6), 0 0 80px rgba(249,115,22,0.3)",
               }} />
               
               {/* Inner Container */}
@@ -3467,17 +3471,17 @@ export default function App() {
                 width: 120,
                 height: 120,
                 borderRadius: 28,
-                background: `linear-gradient(145deg, rgba(239,68,68,0.12), rgba(249,115,22,0.08))`,
+                background: `linear-gradient(145deg, rgba(239,68,68,0.25), rgba(249,115,22,0.15))`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 boxShadow: `
-                  0 24px 64px rgba(239,68,68,0.25),
-                  0 0 100px rgba(239,68,68,0.15),
-                  inset 0 1px 1px rgba(255,255,255,0.1)
+                  0 24px 64px rgba(239,68,68,0.45),
+                  0 0 100px rgba(239,68,68,0.35),
+                  inset 0 1px 1px rgba(255,255,255,0.2)
                 `,
                 padding: 18,
-                border: `1px solid rgba(239,68,68,0.25)`,
+                border: `1px solid rgba(239,68,68,0.5)`,
                 position: "relative",
                 overflow: "hidden",
               }}>
@@ -3488,7 +3492,7 @@ export default function App() {
                   left: "-100%",
                   width: "60%",
                   height: "100%",
-                  background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
+                  background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
                   animation: "shine 2.5s ease-in-out infinite",
                   animationDelay: "0.5s",
                 }} />
