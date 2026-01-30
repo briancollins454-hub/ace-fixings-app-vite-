@@ -29,49 +29,49 @@ import OneSignal from "onesignal-cordova-plugin";
 const { useEffect, useMemo, useRef, useState } = React;
 
 // ==========================
-// BRAND / THEME - ULTRA PREMIUM
+// BRAND / THEME - SOPHISTICATED & PROFESSIONAL
 // ==========================
 const BRAND = {
   name: "Ace Fixings",
   domain: "acefixings.com",
-  // Premium color palette - Rich & Vibrant
-  primary: "#ef4444",
-  primaryLight: "#f87171",
-  primaryDark: "#dc2626",
-  primaryGlow: "rgba(239, 68, 68, 0.5)",
-  secondary: "#f97316",
-  secondaryGlow: "rgba(249, 115, 22, 0.4)",
-  accent: "#f65c5c",
-  accentGlow: "rgba(139, 92, 246, 0.4)",
-  success: "#10b981",
-  successGlow: "rgba(16, 185, 129, 0.4)",
-  warning: "#f59e0b",
-  gold: "#fbbf24",
-  goldGlow: "rgba(251, 191, 36, 0.4)",
-  // Ultra Dark Premium Theme
-  bg: "#030303",
-  bgAlt: "#0a0a0a",
-  bgGradient: "linear-gradient(180deg, #0a0a0a 0%, #030303 50%, #050505 100%)",
-  card: "#0c0c0c",
-  cardHover: "#141414",
-  cardBorder: "rgba(255,255,255,0.05)",
-  cardGlow: "rgba(239, 68, 68, 0.1)",
-  // Premium Glass effects
-  glass: "rgba(12, 12, 12, 0.8)",
-  glassBorder: "rgba(255,255,255,0.1)",
-  glassHeavy: "rgba(8, 8, 8, 0.95)",
-  glassShine: "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%)",
+  // Professional color palette - Muted & Refined
+  primary: "#991b1b",
+  primaryLight: "#b91c1c",
+  primaryDark: "#7f1d1d",
+  primaryGlow: "rgba(153, 27, 27, 0.3)",
+  secondary: "#1f2937",
+  secondaryGlow: "rgba(31, 41, 55, 0.2)",
+  accent: "#b91c1c",
+  accentGlow: "rgba(185, 28, 28, 0.25)",
+  success: "#059669",
+  successGlow: "rgba(5, 150, 105, 0.25)",
+  warning: "#d97706",
+  gold: "#b8860b",
+  goldGlow: "rgba(184, 134, 11, 0.25)",
+  // Professional Dark Charcoal Theme
+  bg: "#0f172a",
+  bgAlt: "#1e293b",
+  bgGradient: "linear-gradient(180deg, #1e293b 0%, #0f172a 50%, #0a0f1f 100%)",
+  card: "#1e293b",
+  cardHover: "#334155",
+  cardBorder: "rgba(255,255,255,0.08)",
+  cardGlow: "rgba(153, 27, 27, 0.08)",
+  // Refined Glass effects
+  glass: "rgba(30, 41, 59, 0.85)",
+  glassBorder: "rgba(255,255,255,0.12)",
+  glassHeavy: "rgba(15, 23, 42, 0.95)",
+  glassShine: "linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 50%)",
   // Typography
-  text: "#ffffff",
-  textSecondary: "#e5e5e5",
-  muted: "#737373",
-  mutedLight: "#a3a3a3",
-  // Premium Shadows
-  shadowSm: "0 2px 8px rgba(0,0,0,0.5)",
-  shadowMd: "0 8px 32px rgba(0,0,0,0.6)",
-  shadowLg: "0 24px 64px rgba(0,0,0,0.7)",
-  shadowGlow: "0 0 40px rgba(239,68,68,0.4)",
-  shadowGlowHover: "0 0 60px rgba(239,68,68,0.5)",
+  text: "#f1f5f9",
+  textSecondary: "#cbd5e1",
+  muted: "#94a3b8",
+  mutedLight: "#cbd5e1",
+  // Refined Shadows
+  shadowSm: "0 1px 2px rgba(0,0,0,0.4)",
+  shadowMd: "0 4px 12px rgba(0,0,0,0.5)",
+  shadowLg: "0 12px 32px rgba(0,0,0,0.6)",
+  shadowGlow: "0 0 24px rgba(153,27,27,0.25)",
+  shadowGlowHover: "0 0 36px rgba(153,27,27,0.35)",
 };
 
 // ==========================
@@ -324,18 +324,18 @@ const K = {
 // ==========================
 function Button({ children, onClick, disabled, style, variant = "primary", title, className, type = "button", loading = false, icon, size = "md" }) {
   const sizes = {
-    sm: { padding: "10px 14px", fontSize: 13, borderRadius: 14, gap: 6 },
-    md: { padding: "14px 20px", fontSize: 14, borderRadius: 16, gap: 8 },
-    lg: { padding: "18px 28px", fontSize: 15, borderRadius: 20, gap: 10 },
+    sm: { padding: "9px 13px", fontSize: 13, borderRadius: 6, gap: 5 },
+    md: { padding: "12px 18px", fontSize: 14, borderRadius: 7, gap: 7 },
+    lg: { padding: "16px 26px", fontSize: 15, borderRadius: 8, gap: 9 },
   };
   const base = {
     border: "none",
     ...sizes[size],
-    fontWeight: 700,
-    letterSpacing: "0.02em",
+    fontWeight: 600,
+    letterSpacing: "0.01em",
     cursor: disabled || loading ? "not-allowed" : "pointer",
     opacity: disabled ? 0.5 : 1,
-    transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
+    transition: "all 0.2s ease",
     userSelect: "none",
     display: "inline-flex",
     alignItems: "center",
@@ -347,45 +347,36 @@ function Button({ children, onClick, disabled, style, variant = "primary", title
   };
   const variants = {
     primary: { 
-      background: `linear-gradient(135deg, ${BRAND.primary} 0%, #ff6b6b 40%, ${BRAND.secondary} 100%)`,
-      backgroundSize: "200% 200%",
-      animation: "gradientShift 4s ease infinite",
+      background: BRAND.primary,
       color: "#fff",
-      boxShadow: `0 8px 28px ${BRAND.primaryGlow}, inset 0 1px 0 rgba(255,255,255,0.15)`,
-      textShadow: "0 2px 4px rgba(0,0,0,0.3)",
-      border: "1px solid rgba(255,255,255,0.1)",
+      boxShadow: `0 2px 8px ${BRAND.primaryGlow}`,
+      border: `1px solid ${BRAND.primaryLight}`,
     },
     ghost: { 
-      background: "rgba(255,255,255,0.03)", 
-      backdropFilter: "blur(12px)",
-      WebkitBackdropFilter: "blur(12px)",
-      color: "#fff", 
-      border: "1px solid rgba(255,255,255,0.08)",
-      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+      background: "rgba(255,255,255,0.06)", 
+      backdropFilter: "blur(8px)",
+      WebkitBackdropFilter: "blur(8px)",
+      color: BRAND.text, 
+      border: `1px solid ${BRAND.glassBorder}`,
+      boxShadow: `0 1px 3px rgba(0,0,0,0.2)`,
     },
     dark: { 
-      background: "linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))", 
-      color: "#fff", 
-      border: "1px solid rgba(255,255,255,0.08)",
-      boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.05)",
+      background: BRAND.card, 
+      color: BRAND.text, 
+      border: `1px solid ${BRAND.cardBorder}`,
+      boxShadow: `0 2px 6px rgba(0,0,0,0.3)`,
     },
     success: {
-      background: "linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%)",
-      backgroundSize: "200% 200%",
-      animation: "gradientShift 4s ease infinite",
+      background: BRAND.success,
       color: "#fff",
-      boxShadow: "0 8px 28px rgba(34,197,94,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
-      textShadow: "0 2px 4px rgba(0,0,0,0.2)",
-      border: "1px solid rgba(255,255,255,0.1)",
+      boxShadow: `0 2px 8px ${BRAND.successGlow}`,
+      border: `1px solid ${BRAND.success}`,
     },
     accent: {
-      background: `linear-gradient(135deg, ${BRAND.accent} 0%, #a78bfa 50%, #c4b5fd 100%)`,
-      backgroundSize: "200% 200%",
-      animation: "gradientShift 4s ease infinite",
+      background: BRAND.accent,
       color: "#fff",
-      boxShadow: "0 8px 28px rgba(139,92,246,0.35), inset 0 1px 0 rgba(255,255,255,0.15)",
-      textShadow: "0 2px 4px rgba(0,0,0,0.2)",
-      border: "1px solid rgba(255,255,255,0.1)",
+      boxShadow: `0 2px 8px ${BRAND.accentGlow}`,
+      border: `1px solid ${BRAND.accent}`,
     },
   };
   return (
@@ -871,13 +862,14 @@ function BulkPricingInfoModal({ onClose }) {
     >
       <div
         style={{
-          background: "#0a0a0a",
-          borderRadius: 20,
+          background: BRAND.card,
+          borderRadius: 8,
           padding: 20,
           maxWidth: 420,
           width: "90%",
-          border: "1px solid #1f1f1f",
-          animation: "cardSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          border: `1px solid ${BRAND.cardBorder}`,
+          animation: "cardSlideIn 0.3s ease",
+          boxShadow: BRAND.shadowMd,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -897,9 +889,9 @@ function BulkPricingInfoModal({ onClose }) {
               key={i}
               style={{
                 padding: 12,
-                borderRadius: 12,
-                border: `2px solid ${tier.color}`,
-                background: "#0f0f0f",
+                borderRadius: 6,
+                border: `1px solid ${tier.color}`,
+                background: BRAND.bgAlt,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -944,20 +936,21 @@ function AdvancedFiltersPanel({ filters, onFilterChange, allVendors, onClose }) 
     >
       <div
         style={{
-          background: "#0a0a0a",
-          borderRadius: "20px 20px 0 0",
+          background: BRAND.card,
+          borderRadius: "8px 8px 0 0",
           width: "100%",
           maxHeight: "80vh",
           overflow: "auto",
           padding: 20,
-          borderTop: "1px solid #1f1f1f",
-          animation: "slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          borderTop: `1px solid ${BRAND.cardBorder}`,
+          animation: "slideUp 0.3s ease",
+          boxShadow: BRAND.shadowMd,
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ fontSize: 18, fontWeight: 1000 }}>Filters</div>
-          <Button variant="ghost" onClick={onClose}>✕</Button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <div style={{ fontSize: 17, fontWeight: 700, color: BRAND.text }}>Filters</div>
+          <Button variant="ghost" onClick={onClose} size="sm">✕</Button>
         </div>
 
         <div style={{ display: "grid", gap: 16 }}>
@@ -2932,13 +2925,13 @@ export default function App() {
   };
 
   const card = {
-    background: "rgba(255,255,255,0.02)",
+    background: BRAND.card,
     border: `1px solid ${BRAND.cardBorder}`,
-    borderRadius: 20,
+    borderRadius: 8,
     padding: 16,
-    boxShadow: BRAND.shadowMd,
-    backdropFilter: "blur(10px)",
-    WebkitBackdropFilter: "blur(10px)",
+    boxShadow: BRAND.shadowSm,
+    backdropFilter: "blur(8px)",
+    WebkitBackdropFilter: "blur(8px)",
   };
 
   const grid = {
@@ -3615,12 +3608,12 @@ export default function App() {
             <div style={{
               width: 48,
               height: 48,
-              borderRadius: 14,
+              borderRadius: 8,
               overflow: "hidden",
               flexShrink: 0,
-              background: "linear-gradient(135deg, rgba(239,68,68,0.15), rgba(249,115,22,0.1))",
-              border: "1px solid rgba(239,68,68,0.25)",
-              boxShadow: "0 8px 24px rgba(239,68,68,0.2), 0 0 1px rgba(255,255,255,0.1) inset",
+              background: BRAND.card,
+              border: `1px solid ${BRAND.cardBorder}`,
+              boxShadow: BRAND.shadowSm,
               padding: 4,
               position: "relative",
             }}>
@@ -3630,8 +3623,8 @@ export default function App() {
                 left: 0,
                 right: 0,
                 height: "50%",
-                background: "linear-gradient(180deg, rgba(255,255,255,0.1), transparent)",
-                borderRadius: "14px 14px 0 0",
+                background: "linear-gradient(180deg, rgba(255,255,255,0.05), transparent)",
+                borderRadius: "8px 8px 0 0",
                 pointerEvents: "none",
               }} />
               <img 
@@ -3947,11 +3940,11 @@ export default function App() {
                       style={{
                         ...card,
                         cursor: "pointer",
-                        animation: `cardSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${idx * 50}ms backwards`,
-                        transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                        background: "linear-gradient(145deg, rgba(20,20,20,0.9), rgba(10,10,10,0.95))",
-                        border: "1px solid rgba(255,255,255,0.06)",
-                        boxShadow: "0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)",
+                        animation: `cardSlideIn 0.5s ease ${idx * 50}ms backwards`,
+                        transition: "all 0.2s ease",
+                        background: BRAND.card,
+                        border: `1px solid ${BRAND.cardBorder}`,
+                        boxShadow: BRAND.shadowSm,
                       }}
                       onClick={() => openCollection(c)}
                       onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.96)")}
