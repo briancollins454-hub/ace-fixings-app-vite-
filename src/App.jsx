@@ -1892,21 +1892,6 @@ export default function App() {
     if (cartId) Preferences.set({ key: K.CART_ID, value: cartId });
   }, [cartId]);
 
-  // Periodically check for out-of-stock favorites that came back in stock (every 30 minutes)
-  useEffect(() => {
-    if (!outOfStockFavorites || outOfStockFavorites.length === 0) return;
-    
-    // Check immediately
-    checkOutOfStockFavoritesAvailability();
-    
-    // Set up interval for periodic checks
-    const interval = setInterval(() => {
-      checkOutOfStockFavoritesAvailability();
-    }, 30 * 60 * 1000); // 30 minutes
-    
-    return () => clearInterval(interval);
-  }, []);
-
   // Auto-load orders when opening Orders hub (fast)
   useEffect(() => {
     if (view === "orders" && auth?.access_token && isNative) {
@@ -1914,79 +1899,6 @@ export default function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
-
-  // Check for out-of-stock favorites that came back in stock and send notifications
-  async function checkOutOfStockFavoritesAvailability() {
-    // Get current state safely - read from state at call time
-    try {
-      const currentOosF = outOfStockFavorites;
-      const currentFav = favorites;
-      
-      if (!currentOosF || currentOosF.length === 0 || !currentFav || currentFav.length === 0) return;
-      
-      // Query the out-of-stock favorite products
-      const productIds = currentOosF.map((f) => `"gid://shopify/Product/${f.productId.split("/").pop()}"`).join(",");
-      if (!productIds) return;
-      
-      const q = `
-        query CheckProducts($first: Int!) {
-          products(first: $first) {
-            edges {
-              node {
-                id
-                title
-                variants(first: 1) {
-                  edges {
-                    node {
-                      id
-                      quantityAvailable
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      `;
-      
-      const data = await storefrontGraphql(q, { first: currentOosF.length });
-      const products = data?.products?.edges?.map((e) => e.node) || [];
-      
-      // Check which products are now in stock
-      const nowInStock = [];
-      currentOosF.forEach((oosItem) => {
-        const product = products.find((p) => p.id.includes(oosItem.productId));
-        if (product?.variants?.edges?.[0]?.node?.quantityAvailable > 0) {
-          nowInStock.push(oosItem);
-        }
-      });
-      
-      // Send notifications for products that came back in stock
-      for (const item of nowInStock) {
-        if (isNative && OneSignal) {
-          try {
-            OneSignal.Notifications.sendNotification({
-              headings: { en: "✅ Back in Stock!" },
-              contents: { en: `${item.title} is back in stock. Tap to buy now!` },
-              data: { productId: item.productId, action: "view_product" },
-              ios_attachments: { image: "https://acefixings.com/logo.png" },
-            });
-          } catch (err) {
-            console.warn("[Notification] Send error:", err);
-          }
-        }
-      }
-      
-      // Remove from out-of-stock tracking
-      if (nowInStock.length > 0) {
-        setOutOfStockFavorites((oosF) =>
-          oosF.filter((item) => !nowInStock.find((nis) => nis.productId === item.productId))
-        );
-      }
-    } catch (err) {
-      console.warn("[Out-of-Stock Check] Error:", err);
-    }
-  }
 
   async function loadCollections() {
     setLoadingCollections(true);
