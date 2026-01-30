@@ -1187,6 +1187,7 @@ export default function App() {
   const [calcProduct, setCalcProduct] = useState(null);
   const [calcArea, setCalcArea] = useState("");
   const [calcSpacing, setCalcSpacing] = useState("200"); // mm between fixings
+  const [calcPackSize, setCalcPackSize] = useState(""); // items per box/pack
   const [calcResult, setCalcResult] = useState(null);
   
   // Product specs/details
@@ -2473,6 +2474,7 @@ export default function App() {
     setCalcProduct(product);
     setCalcArea("");
     setCalcSpacing("200");
+    setCalcPackSize(""); // Reset pack size
     setCalcResult(null);
     setShowCalculator(true);
   }
@@ -2482,9 +2484,15 @@ export default function App() {
     
     const area = parseFloat(calcArea);
     const spacing = parseFloat(calcSpacing);
+    const packSize = calcPackSize ? parseFloat(calcPackSize) : null;
     
     if (isNaN(area) || isNaN(spacing) || spacing <= 0) {
       setToast("Please enter valid numbers");
+      return;
+    }
+    
+    if (!packSize || packSize <= 0) {
+      setToast("Please enter the pack size (items per box)");
       return;
     }
     
@@ -2493,39 +2501,26 @@ export default function App() {
     const fixingsPerM2 = Math.pow(1000 / spacing, 2);
     const totalFixings = Math.ceil(area * fixingsPerM2);
     
-    // Assume pack sizes (can be enhanced with real product data)
-    const packSizes = [10, 25, 50, 100, 200, 500, 1000];
-    let recommendedPacks = [];
-    let remaining = totalFixings;
+    // Calculate how many boxes needed based on actual pack size
+    const boxesNeeded = Math.ceil(totalFixings / packSize);
     
-    // Greedy algorithm for pack recommendation
-    for (const pack of packSizes.reverse()) {
-      if (remaining >= pack) {
-        const count = Math.floor(remaining / pack);
-        recommendedPacks.push({ size: pack, count });
-        remaining = remaining % pack;
-      }
-    }
-    if (remaining > 0) {
-      recommendedPacks.push({ size: packSizes[packSizes.length - 1], count: 1 });
-    }
-    
-    // Calculate cost based on recommended packs
-    // unitPrice is already the price per box/unit, so just multiply by count
+    // Calculate cost based on number of boxes
+    // unitPrice is already the price per box/unit
     const unitPrice = calcProduct.variants?.[0]?.price || 0;
-    const totalCost = recommendedPacks.reduce((sum, pack) => sum + (pack.count * unitPrice), 0);
+    const totalCost = boxesNeeded * unitPrice;
     
-    // Calculate total number of boxes needed
-    const totalBoxes = recommendedPacks.reduce((sum, pack) => sum + pack.count, 0);
+    // Show breakdown
+    const recommendedPacks = [{ size: packSize, count: boxesNeeded }];
     
     setCalcResult({
       totalFixings,
       fixingsPerM2: fixingsPerM2.toFixed(1),
       recommendedPacks,
       totalCost,
-      totalBoxes,
+      totalBoxes: boxesNeeded,
       area,
       spacing,
+      packSize,
     });
   }
 
@@ -5511,11 +5506,28 @@ export default function App() {
                 </div>
               </div>
 
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ fontSize: 12, color: BRAND.mutedLight, marginBottom: 6, display: "block", fontWeight: 600 }}>
+                  Items per box/pack <span style={{ color: BRAND.primary }}>*</span>
+                </label>
+                <input
+                  type="number"
+                  value={calcPackSize}
+                  onChange={(e) => setCalcPackSize(e.target.value)}
+                  placeholder="e.g. 100 (for £2.64 box)"
+                  className="premium-input"
+                  style={{ width: "100%", boxSizing: "border-box" }}
+                />
+                <div style={{ fontSize: 11, color: BRAND.muted, marginTop: 6 }}>
+                  How many fixings are in each box you're buying?
+                </div>
+              </div>
+
               <Button
                 variant="primary"
                 onClick={calculateQuantity}
                 style={{ width: "100%", marginBottom: 16 }}
-                disabled={!calcArea || !calcSpacing}
+                disabled={!calcArea || !calcSpacing || !calcPackSize}
               >
                 Calculate
               </Button>
@@ -5540,6 +5552,14 @@ export default function App() {
                       <div style={{ fontSize: 11, color: BRAND.muted }}>Spacing</div>
                       <div style={{ fontSize: 16, fontWeight: 700 }}>{calcResult.spacing}mm</div>
                     </div>
+                    <div style={{ padding: 12, background: "rgba(0,0,0,0.2)", borderRadius: 10 }}>
+                      <div style={{ fontSize: 11, color: BRAND.muted }}>Box Size</div>
+                      <div style={{ fontSize: 16, fontWeight: 700 }}>{calcResult.packSize}</div>
+                    </div>
+                    <div style={{ padding: 12, background: "rgba(0,0,0,0.2)", borderRadius: 10 }}>
+                      <div style={{ fontSize: 11, color: BRAND.muted }}>Boxes Needed</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: BRAND.success }}>{calcResult.totalBoxes}</div>
+                    </div>
                   </div>
 
                   <div style={{ padding: 14, background: "rgba(0,0,0,0.3)", borderRadius: 12, marginBottom: 12 }}>
@@ -5552,10 +5572,23 @@ export default function App() {
                     </div>
                   </div>
 
+                  <div style={{ padding: 14, background: "rgba(0,0,0,0.3)", borderRadius: 12, marginBottom: 12 }}>
+                    <div style={{ fontSize: 11, color: BRAND.muted, marginBottom: 4 }}>Breakdown</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>
+                      {calcResult.totalBoxes} × {calcResult.packSize} = {(calcResult.totalBoxes * calcResult.packSize).toLocaleString()} items
+                    </div>
+                    <div style={{ fontSize: 11, color: BRAND.muted }}>
+                      Covers {calcResult.totalFixings.toLocaleString()} needed fixings
+                    </div>
+                  </div>
+
                   <div style={{ padding: 14, background: "rgba(0,0,0,0.3)", borderRadius: 12 }}>
                     <div style={{ fontSize: 11, color: BRAND.muted, marginBottom: 4 }}>Estimated Cost</div>
                     <div style={{ fontSize: 22, fontWeight: 800, color: BRAND.success }}>
                       {displayPrice(calcResult.totalCost)}
+                    </div>
+                    <div style={{ fontSize: 11, color: BRAND.muted }}>
+                      ({displayPrice(calcResult.totalCost / calcResult.totalBoxes)}/box)
                     </div>
                   </div>
 
