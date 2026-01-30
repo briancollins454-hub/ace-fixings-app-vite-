@@ -504,7 +504,7 @@ function Badge({ children, variant = "default" }) {
   );
 }
 
-function StockBadge({ available, quantity }) {
+function StockBadge({ available, quantity, isTracked }) {
   if (!available) {
     return (
       <span style={{
@@ -513,14 +513,14 @@ function StockBadge({ available, quantity }) {
         gap: 5,
         padding: "6px 10px",
         borderRadius: 10,
-        background: "rgba(220,38,38,0.1)",
-        border: "1px solid rgba(220,38,38,0.2)",
+        background: isTracked ? "rgba(59,130,246,0.15)" : "rgba(220,38,38,0.1)",
+        border: isTracked ? "1px solid rgba(59,130,246,0.3)" : "1px solid rgba(220,38,38,0.2)",
         fontSize: 11,
         fontWeight: 600,
-        color: "#f87171",
+        color: isTracked ? "#60a5fa" : "#f87171",
       }}>
         <span style={{ fontSize: 8 }}>●</span>
-        Out of Stock
+        {isTracked ? "📬 Tracking..." : "Out of Stock"}
       </span>
     );
   }
@@ -1160,6 +1160,9 @@ export default function App() {
   // PRO FEATURES STATE
   // Wishlist/Favorites
   const [favorites, setFavorites] = useState([]);
+  
+  // Track out-of-stock favorites for notifications (stores { productId, variantId, title })
+  const [outOfStockFavorites, setOutOfStockFavorites] = useState([]);
   
   // Quick reorder from recent
   const [recentlyOrdered, setRecentlyOrdered] = useState([]);
@@ -1889,6 +1892,16 @@ export default function App() {
     if (cartId) Preferences.set({ key: K.CART_ID, value: cartId });
   }, [cartId]);
 
+  // Periodically check for out-of-stock favorites that came back in stock (every 30 minutes)
+  useEffect(() => {
+    if (outOfStockFavorites.length === 0) return;
+    
+    checkOutOfStockFavoritesAvailability();
+    const interval = setInterval(checkOutOfStockFavoritesAvailability, 30 * 60 * 1000); // 30 minutes
+    
+    return () => clearInterval(interval);
+  }, [outOfStockFavorites]);
+
   // Auto-load orders when opening Orders hub (fast)
   useEffect(() => {
     if (view === "orders" && auth?.access_token && isNative) {
@@ -1896,6 +1909,75 @@ export default function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
+
+  // Check for out-of-stock favorites that came back in stock and send notifications
+  async function checkOutOfStockFavoritesAvailability() {
+    if (outOfStockFavorites.length === 0 || !favorites.length) return;
+    
+    try {
+      // Query the out-of-stock favorite products
+      const productIds = outOfStockFavorites.map((f) => `"gid://shopify/Product/${f.productId.split("/").pop()}"`).join(",");
+      if (!productIds) return;
+      
+      const q = `
+        query CheckProducts($first: Int!) {
+          products(first: $first) {
+            edges {
+              node {
+                id
+                title
+                variants(first: 1) {
+                  edges {
+                    node {
+                      id
+                      quantityAvailable
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+      
+      const data = await storefrontGraphql(q, { first: outOfStockFavorites.length });
+      const products = data?.products?.edges?.map((e) => e.node) || [];
+      
+      // Check which products are now in stock
+      const nowInStock = [];
+      outOfStockFavorites.forEach((oosItem) => {
+        const product = products.find((p) => p.id.includes(oosItem.productId));
+        if (product?.variants?.edges?.[0]?.node?.quantityAvailable > 0) {
+          nowInStock.push(oosItem);
+        }
+      });
+      
+      // Send notifications for products that came back in stock
+      for (const item of nowInStock) {
+        if (isNative && OneSignal) {
+          try {
+            OneSignal.Notifications.sendNotification({
+              headings: { en: "✅ Back in Stock!" },
+              contents: { en: `${item.title} is back in stock. Tap to buy now!` },
+              data: { productId: item.productId, action: "view_product" },
+              ios_attachments: { image: "https://acefixings.com/logo.png" },
+            });
+          } catch (err) {
+            console.warn("[Notification] Send error:", err);
+          }
+        }
+      }
+      
+      // Remove from out-of-stock tracking
+      if (nowInStock.length > 0) {
+        setOutOfStockFavorites((oosF) =>
+          oosF.filter((item) => !nowInStock.find((nis) => nis.productId === item.productId))
+        );
+      }
+    } catch (err) {
+      console.warn("[Out-of-Stock Check] Error:", err);
+    }
+  }
 
   async function loadCollections() {
     setLoadingCollections(true);
@@ -2262,16 +2344,33 @@ export default function App() {
     return favorites.some((p) => p.id === productId);
   }
 
+  function isProductInStock(product) {
+    if (!product || !product.variants) return true;
+    // Check if any variant has available inventory
+    return product.variants.some((v) => v?.quantityAvailable && v.quantityAvailable > 0);
+  }
+
   function toggleFavorite(product) {
     setFavorites((prev) => {
       const isFav = prev.some((p) => p.id === product.id);
       if (isFav) {
+        // Removing from favorites - also remove from out-of-stock tracking
+        setOutOfStockFavorites((oosF) => oosF.filter((item) => item.productId !== product.id));
         return prev.filter((p) => p.id !== product.id);
+      }
+      // Adding to favorites
+      const isInStock = isProductInStock(product);
+      if (!isInStock) {
+        // Track this out-of-stock product for notifications
+        setOutOfStockFavorites((oosF) => [
+          ...oosF,
+          { productId: product.id, title: product.title }
+        ]);
       }
       return [...prev, product];
     });
     const isFav = favorites.some((p) => p.id === product.id);
-    setToast(`${isFav ? "Removed from" : "Added to"} ❤️ Favorites`);
+    setToast(`${isFav ? "Removed from" : "Added to"} ❤️ Favorites${!isFav && !isProductInStock(product) ? "\n📬 You'll get a notification when it's back in stock!" : ""}`);
   }
 
   // ================================
@@ -4218,7 +4317,11 @@ export default function App() {
 
                         <div style={{ height: 8 }} />
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                          <StockBadge available={v?.availableForSale} quantity={v?.quantityAvailable} />
+                          <StockBadge 
+                            available={v?.availableForSale} 
+                            quantity={v?.quantityAvailable}
+                            isTracked={!v?.availableForSale && outOfStockFavorites.some(f => f.productId === p.id)}
+                          />
                           {v && <SavingsIndicator compareAtPrice={v.compareAtPrice} price={v.price} />}
                           <BulkPricingBadge quantity={10} discount={getBulkDiscount(10)} onClick={() => setShowBulkPricingInfo(true)} />
                         </div>
@@ -5897,7 +6000,11 @@ export default function App() {
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   {quickViewProduct?.variants?.[0] && (
                     <>
-                      <StockBadge available={quickViewProduct.variants[0].availableForSale} quantity={quickViewProduct.variants[0].quantityAvailable} />
+                      <StockBadge 
+                        available={quickViewProduct.variants[0].availableForSale} 
+                        quantity={quickViewProduct.variants[0].quantityAvailable}
+                        isTracked={!quickViewProduct.variants[0].availableForSale && outOfStockFavorites.some(f => f.productId === quickViewProduct.id)}
+                      />
                       <BulkPricingBadge quantity={10} discount={getBulkDiscount(10)} onClick={() => setShowBulkPricingInfo(true)} />
                     </>
                   )}
@@ -6026,7 +6133,11 @@ function ProductView({ product, collectionProducts, setActiveProduct, setView, o
 
           <div style={{ height: 4 }} />
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <StockBadge available={variant?.availableForSale} quantity={variant?.quantityAvailable} />
+            <StockBadge 
+              available={variant?.availableForSale} 
+              quantity={variant?.quantityAvailable}
+              isTracked={!variant?.availableForSale && outOfStockFavorites.some(f => f.productId === activeProduct.id)}
+            />
             {variant && <SavingsIndicator compareAtPrice={variant.compareAtPrice} price={variant.price} />}
           </div>
 
