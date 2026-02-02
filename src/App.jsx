@@ -97,9 +97,12 @@ const CUSTOMER_ACCOUNT_API_DISCOVERY_URL = `https://${ACCOUNT_DOMAIN}/.well-know
 // ==========================
 const CUSTOMER_ACCOUNTS_CLIENT_ID = "edc5278a-8942-4645-a802-bdfa625f8dbd";
 
-// ✅ MUST match your AndroidManifest deep link intent-filter
-// <data android:scheme="shop.90779713878.app" android:host="callback" />
-const REDIRECT_URI = "shop.90779713878.app://callback";
+// 🔴 CRITICAL: This MUST match EXACTLY what's configured in your Shopify app settings
+// Check your Shopify Admin → Settings → Apps and integrations → Develop apps → [Your App] → Configuration
+// Under "Redirect URI(s)" section
+// We use a WEB callback page that then redirects to the app deep link
+// This works around Browser plugin limitations with direct deep link redirects
+const REDIRECT_URI = "https://account.acefixings.com/oauth-callback.html";
 
 // ==========================
 // VAT CONFIG
@@ -1876,8 +1879,37 @@ export default function App() {
             }
             const pkce = await Preferences.get({ key: K.PKCE });
             if (pkce?.value) {
-              console.warn("⚠️ Found pending PKCE but no authorization code received - OAuth may have failed silently");
-              // Could check localStorage for the code if password-based login doesn't trigger deep link
+              console.warn("⚠️ Found pending PKCE - checking sessionStorage for authorization code from callback page...");
+              try {
+                const savedCode = window.sessionStorage.getItem("oauth_code");
+                const savedState = window.sessionStorage.getItem("oauth_state");
+                const savedError = window.sessionStorage.getItem("oauth_error");
+                
+                if (savedError) {
+                  const errorDesc = window.sessionStorage.getItem("oauth_error_description");
+                  console.error("❌ OAuth error:", savedError, errorDesc);
+                  window.sessionStorage.removeItem("oauth_error");
+                  window.sessionStorage.removeItem("oauth_error_description");
+                  throw new Error(errorDesc || savedError);
+                }
+                
+                if (savedCode && savedState) {
+                  console.log("✓ Found OAuth code in sessionStorage - processing...");
+                  window.sessionStorage.removeItem("oauth_code");
+                  window.sessionStorage.removeItem("oauth_state");
+                  deepLinkHandledRef.current = true;
+                  const pkceObj = safeJsonParse(pkce.value);
+                  if (pkceObj?.verifier) {
+                    await handleOAuthCallback({ code: savedCode, state: savedState });
+                  }
+                } else {
+                  console.log("⚠️ No OAuth code found in sessionStorage yet");
+                }
+              } catch (e) {
+                console.error("❌ OAuth resume error:", e);
+                setError(String(e?.message || e));
+                deepLinkHandledRef.current = false;
+              }
             }
           });
         }
@@ -2790,10 +2822,16 @@ export default function App() {
           code_challenge_method: "S256",
         });
 
-      console.log("🌐 OPENING AUTH URL:", authUrl);
-      console.log("🌐 URL length:", authUrl.length);
-      console.log("🌐 Platform:", Capacitor.getPlatform());
-      console.log("🌐 Is native:", isNative);
+      console.log("🔴 CRITICAL OAuth Debug Info:");
+      console.log("   Authorization Endpoint:", oidcJson.authorization_endpoint);
+      console.log("   Client ID:", CUSTOMER_ACCOUNTS_CLIENT_ID);
+      console.log("   Redirect URI:", REDIRECT_URI);
+      console.log("   ⚠️  VERIFY THIS MATCHES YOUR SHOPIFY APP SETTINGS!");
+      console.log("   📍 Go to: Shopify Admin → Settings → Apps & Integrations → Develop Apps → [Your App] → Configuration");
+      console.log("   🌐 OPENING AUTH URL:", authUrl);
+      console.log("   🌐 URL length:", authUrl.length);
+      console.log("   🌐 Platform:", Capacitor.getPlatform());
+      console.log("   🌐 Is native:", isNative);
 
       await Browser.open({ url: authUrl, presentationStyle: "fullscreen" });
       console.log("✓ Browser opened successfully - waiting for deep link callback...");

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ace Fixings - OAuth Callback</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #991b1b 0%, #1e293b 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 10px;
+        }
+        p {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Authenticating...</h1>
+        <p>Redirecting you back to Ace Fixings</p>
+    </div>
+
+    <script>
+        // Get the authorization code and state from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get('code');
+        const state = urlParams.get('state');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+
+        console.log('OAuth Callback received:');
+        console.log('Code:', code);
+        console.log('State:', state);
+        console.log('Error:', error);
+
+        // Store the code in sessionStorage so the app can retrieve it
+        if (code && state) {
+            sessionStorage.setItem('oauth_code', code);
+            sessionStorage.setItem('oauth_state', state);
+            console.log('✓ OAuth code stored in sessionStorage');
+        } else if (error) {
+            sessionStorage.setItem('oauth_error', error);
+            sessionStorage.setItem('oauth_error_description', errorDescription || '');
+            console.log('❌ OAuth error:', error);
+        }
+
+        // Redirect to the mobile app deep link
+        // This will trigger the app to come back into focus
+        const deepLinkUrl = `shop.90779713878.app://callback?code=${code || ''}&state=${state || ''}&error=${error || ''}`;
+        console.log('Redirecting to:', deepLinkUrl);
+        
+        // Give it a moment for sessionStorage to be set
+        setTimeout(() => {
+            window.location.href = deepLinkUrl;
+        }, 100);
+    </script>
+</body>
+</html>
