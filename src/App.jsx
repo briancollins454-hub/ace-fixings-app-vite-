@@ -1823,15 +1823,29 @@ export default function App() {
         if (isNative) {
           CapApp.addListener("appUrlOpen", async (event) => {
             try {
-              if (!event?.url) return;
+              console.log("📱 Deep link received:", event?.url);
+              if (!event?.url) {
+                console.warn("⚠️ No URL in deep link event");
+                return;
+              }
               const url = parseUrlLoose(event.url);
-              if (!url) return;
+              if (!url) {
+                console.warn("⚠️ Failed to parse deep link URL:", event.url);
+                return;
+              }
 
               const hrefLower = (url.href || "").toLowerCase();
               const r2 = REDIRECT_URI.toLowerCase();
-              if (!hrefLower.startsWith(r2)) return;
+              console.log("🔗 Checking deep link:", hrefLower, "vs", r2);
+              if (!hrefLower.startsWith(r2)) {
+                console.warn("⚠️ Deep link doesn't match redirect URI");
+                return;
+              }
 
-              if (deepLinkHandledRef.current) return;
+              if (deepLinkHandledRef.current) {
+                console.warn("⚠️ Deep link already handled (duplicate)");
+                return;
+              }
               deepLinkHandledRef.current = true;
 
               const code = url.searchParams.get("code");
@@ -1839,11 +1853,14 @@ export default function App() {
               const errorParam = url.searchParams.get("error");
               const errorDesc = url.searchParams.get("error_description");
 
+              console.log("✓ Code:", code, "State:", state);
               if (errorParam) throw new Error(errorDesc || errorParam);
               if (!code) throw new Error("Missing authorization code");
 
+              console.log("🔐 Exchanging code for token...");
               await handleOAuthCallback({ code, state });
             } catch (e) {
+              console.error("❌ Deep link error:", e);
               setError(String(e?.message || e));
               deepLinkHandledRef.current = false;
             } finally {
