@@ -82,12 +82,15 @@ const ONESIGNAL_APP_ID = "2bec67b0-c645-4c7d-a9bf-ddae18afc651";
 // ==========================
 // SHOPIFY STOREFRONT CONFIG
 // ==========================
-const SHOP_DOMAIN = "acefixings.com";
+const SHOP_DOMAIN = "acefixings.com"; // For products/GraphQL API
+const ACCOUNT_DOMAIN = "account.acefixings.com"; // For OAuth/authentication
 const API_VERSION = "2025-07";
 
 // ⛔ DO NOT paste tokens publicly. Rotate if this file is shared.
 const STOREFRONT_TOKEN = "6a03196efa97d2256f8b9b0c0fc148b9";
 const STOREFRONT_ENDPOINT = `https://${SHOP_DOMAIN}/api/${API_VERSION}/graphql.json`;
+const OIDC_CONFIG_URL = `https://${ACCOUNT_DOMAIN}/.well-known/openid-configuration`;
+const CUSTOMER_ACCOUNT_API_DISCOVERY_URL = `https://${ACCOUNT_DOMAIN}/.well-known/customer-account-api`;
 
 // ==========================
 // CUSTOMER ACCOUNTS (OAUTH)
@@ -97,10 +100,6 @@ const CUSTOMER_ACCOUNTS_CLIENT_ID = "edc5278a-8942-4645-a802-bdfa625f8dbd";
 // ✅ MUST match your AndroidManifest deep link intent-filter
 // <data android:scheme="shop.90779713878.app" android:host="callback" />
 const REDIRECT_URI = "shop.90779713878.app://callback";
-
-// Discovery endpoints
-const OIDC_CONFIG_URL = `https://${SHOP_DOMAIN}/.well-known/openid-configuration`;
-const CUSTOMER_ACCOUNT_API_DISCOVERY_URL = `https://${SHOP_DOMAIN}/.well-known/customer-account-api`;
 
 // ==========================
 // VAT CONFIG
@@ -2728,10 +2727,17 @@ export default function App() {
     try {
       deepLinkHandledRef.current = false;
 
+      console.log("🔐 OIDC Config URL:", OIDC_CONFIG_URL);
+      console.log("🔐 ACCOUNT DOMAIN:", ACCOUNT_DOMAIN);
+      console.log("🔐 SHOP DOMAIN:", SHOP_DOMAIN);
+
       const oidcJson = oidc || (await fetchJson(OIDC_CONFIG_URL));
       const custJson = custApi || (await fetchJson(CUSTOMER_ACCOUNT_API_DISCOVERY_URL));
       if (!oidc) setOidc(oidcJson);
       if (!custApi) setCustApi(custJson);
+
+      console.log("✓ OIDC JSON:", oidcJson);
+      console.log("✓ Authorization endpoint:", oidcJson.authorization_endpoint);
 
       const verifier = randomString(64);
       const challenge = await sha256Base64Url(verifier);
@@ -2756,9 +2762,15 @@ export default function App() {
           code_challenge_method: "S256",
         });
 
+      console.log("🌐 OPENING AUTH URL:", authUrl);
+      console.log("🌐 URL length:", authUrl.length);
+
       await Browser.open({ url: authUrl, presentationStyle: "fullscreen" });
+      console.log("✓ Browser opened successfully");
     } catch (e) {
+      console.error("❌ Login error:", e);
       setError(String(e?.message || e));
+      setToast("❌ Login error: " + String(e?.message || e));
     }
   }
 
@@ -2773,8 +2785,8 @@ export default function App() {
 
     let tokenEndpoint = oidcJson.token_endpoint;
     if (Capacitor.isNativePlatform() && !tokenEndpoint.startsWith("http")) {
-      // Use absolute URL for native
-      tokenEndpoint = `https://${SHOP_DOMAIN}/account/oauth/token`;
+      // Use absolute URL for native (on account domain, not shop domain)
+      tokenEndpoint = `https://${ACCOUNT_DOMAIN}/authentication/oauth/token`;
     }
     const tokenJson = await httpPostForm(tokenEndpoint, {
       grant_type: "authorization_code",
