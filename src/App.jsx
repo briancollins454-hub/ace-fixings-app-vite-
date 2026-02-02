@@ -1821,6 +1821,7 @@ export default function App() {
 
         // OAuth callback deep link (NATIVE only)
         if (isNative) {
+          // Listen for deep link events (when browser closes and app comes to foreground)
           CapApp.addListener("appUrlOpen", async (event) => {
             try {
               console.log("📱 Deep link received:", event?.url);
@@ -1838,7 +1839,7 @@ export default function App() {
               const r2 = REDIRECT_URI.toLowerCase();
               console.log("🔗 Checking deep link:", hrefLower, "vs", r2);
               if (!hrefLower.startsWith(r2)) {
-                console.warn("⚠️ Deep link doesn't match redirect URI");
+                console.warn("⚠️ Deep link doesn't match redirect URI - this might be a different deep link");
                 return;
               }
 
@@ -1863,10 +1864,20 @@ export default function App() {
               console.error("❌ Deep link error:", e);
               setError(String(e?.message || e));
               deepLinkHandledRef.current = false;
-            } finally {
-              try {
-                await Browser.close();
-              } catch {}
+            }
+          });
+
+          // Also listen for app resume to check for pending OAuth completion
+          CapApp.addListener("appResume", async () => {
+            console.log("📱 App resumed - checking for pending OAuth...");
+            if (deepLinkHandledRef.current) {
+              console.log("✓ OAuth already handled, skipping check");
+              return;
+            }
+            const pkce = await Preferences.get({ key: K.PKCE });
+            if (pkce?.value) {
+              console.warn("⚠️ Found pending PKCE but no authorization code received - OAuth may have failed silently");
+              // Could check localStorage for the code if password-based login doesn't trigger deep link
             }
           });
         }
@@ -2781,9 +2792,11 @@ export default function App() {
 
       console.log("🌐 OPENING AUTH URL:", authUrl);
       console.log("🌐 URL length:", authUrl.length);
+      console.log("🌐 Platform:", Capacitor.getPlatform());
+      console.log("🌐 Is native:", isNative);
 
       await Browser.open({ url: authUrl, presentationStyle: "fullscreen" });
-      console.log("✓ Browser opened successfully");
+      console.log("✓ Browser opened successfully - waiting for deep link callback...");
     } catch (e) {
       console.error("❌ Login error:", e);
       setError(String(e?.message || e));
