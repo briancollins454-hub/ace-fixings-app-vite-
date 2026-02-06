@@ -28,14 +28,14 @@
             </intent-filter>
 
             <!-- Deep link for OAuth callback from Shopify -->
+            <!-- URL format: shop.90779713878.app://callback?code=xxx&state=yyy -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="shop"
-                    android:host="90779713878.app"
-                    android:path="/callback" />
+                    android:scheme="shop.90779713878.app"
+                    android:host="callback" />
             </intent-filter>
 
         </activity>

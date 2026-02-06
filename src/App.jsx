@@ -98,11 +98,9 @@ const CUSTOMER_ACCOUNT_API_DISCOVERY_URL = `https://${ACCOUNT_DOMAIN}/.well-know
 const CUSTOMER_ACCOUNTS_CLIENT_ID = "edc5278a-8942-4645-a802-bdfa625f8dbd";
 
 // 🔴 CRITICAL: This MUST match EXACTLY what's configured in your Shopify app settings
-// Check your Shopify Admin → Settings → Apps and integrations → Develop apps → [Your App] → Configuration
-// Under "Redirect URI(s)" section
-// We use a WEB callback page that then redirects to the app deep link
-// This works around Browser plugin limitations with direct deep link redirects
-const REDIRECT_URI = "https://account.acefixings.com/oauth-callback.html";
+// Shopify Customer Accounts API REQUIRES deep link for native apps
+// Web redirects are NOT supported
+const REDIRECT_URI = "shop.90779713878.app://callback";
 
 // ==========================
 // VAT CONFIG
@@ -1134,7 +1132,7 @@ export default function App() {
   const [userName, setUserName] = useState("");
   const [isNonVatCustomer, setIsNonVatCustomer] = useState(false);
 
-  const [view, setView] = useState("home"); // home | collection | product | cart | orders | orderDetail | account
+  const [view, setView] = useState("home"); // home | collection | product | cart | orders | orderDetail | account | calculator
   const [activeCollection, setActiveCollection] = useState(null);
   const [activeProduct, setActiveProduct] = useState(null);
 
@@ -1158,6 +1156,12 @@ export default function App() {
   useEffect(() => {
     searchRef.current = search;
   }, [search]);
+
+  // 🧮 SMART PROJECT CALCULATOR STATE
+  const [projectCalcType, setProjectCalcType] = useState("decking"); // decking | fencing | plasterboard | roofing | general
+  const [projectCalcInputs, setProjectCalcInputs] = useState({});
+  const [projectCalcResults, setProjectCalcResults] = useState(null);
+  const [projectCalcLoading, setProjectCalcLoading] = useState(false);
 
   // PRO FEATURES STATE
   // Wishlist/Favorites
@@ -1426,10 +1430,6 @@ export default function App() {
       }`;
       const data = await customerApiGraphql(accessToken, q);
 
-      console.warn("=== CUSTOMER API RESPONSE ===");
-      console.warn(JSON.stringify(data, null, 2));
-      console.warn("=============================");
-
       const first = data?.customer?.firstName || "";
       const last = data?.customer?.lastName || "";
       const email = data?.customer?.emailAddress?.emailAddress || "";
@@ -1438,13 +1438,6 @@ export default function App() {
       
       // Try to generate a customer ID from email since GraphQL might not return it
       const customerId = email ? `gid://shopify/Customer/${email.split("@")[0]}` : "";
-      
-      console.warn("=== EXTRACTED VALUES ===");
-      console.warn("Email:", email);
-      console.warn("First:", first, "Last:", last);
-      console.warn("Tags:", tags);
-      console.warn("Generated Customer ID:", customerId);
-      console.warn("========================");
       
       // Store customer ID in Preferences AND state
       if (customerId) {
@@ -1511,13 +1504,6 @@ export default function App() {
   async function submitVatVerification(businessName, country, vatNumber) {
     try {
       let customerEmail = userEmail;
-      
-      console.warn("=== SUBMITTING VAT ===");
-      console.warn("Customer Email:", customerEmail);
-      console.warn("Business Name:", businessName);
-      console.warn("Country:", country);
-      console.warn("VAT Number:", vatNumber);
-      console.warn("====================");
       
       if (!customerEmail) {
         setToast("❌ Error: Customer email not found. Please log out and log in again.");
@@ -1762,29 +1748,14 @@ export default function App() {
 
         if (isNative && ONESIGNAL_APP_ID) {
           try {
-            console.log("[OneSignal] Initializing with App ID:", ONESIGNAL_APP_ID);
-            
             // OneSignal SDK 5.x API
             OneSignal.initialize(ONESIGNAL_APP_ID);
             
             // Request notification permission with a slight delay to ensure proper initialization
             setTimeout(() => {
-              OneSignal.Notifications.requestPermission(true).then((accepted) => {
-                console.log("[OneSignal] Permission accepted:", accepted);
-              }).catch((err) => {
-                console.log("[OneSignal] Permission request error:", err);
-              });
+              OneSignal.Notifications.requestPermission(true).catch(() => {});
             }, 1000);
-            
-            // Log subscription status
-            OneSignal.User.pushSubscription.getIdAsync().then((id) => {
-              console.log("[OneSignal] Push Subscription ID:", id);
-            });
-            
-            console.log("[OneSignal] Initialization complete");
-          } catch (err) {
-            console.error("[OneSignal] Init error:", err);
-          }
+          } catch {}
         }
 
 
@@ -1825,31 +1796,17 @@ export default function App() {
         // OAuth callback deep link (NATIVE only)
         if (isNative) {
           // Listen for deep link events (when browser closes and app comes to foreground)
-          CapApp.addListener("appUrlOpen", async (event) => {
+          const deepLinkListener = CapApp.addListener("appUrlOpen", async (event) => {
             try {
-              console.log("📱 Deep link received:", event?.url);
-              if (!event?.url) {
-                console.warn("⚠️ No URL in deep link event");
-                return;
-              }
+              if (!event?.url) return;
               const url = parseUrlLoose(event.url);
-              if (!url) {
-                console.warn("⚠️ Failed to parse deep link URL:", event.url);
-                return;
-              }
+              if (!url) return;
 
               const hrefLower = (url.href || "").toLowerCase();
               const r2 = REDIRECT_URI.toLowerCase();
-              console.log("🔗 Checking deep link:", hrefLower, "vs", r2);
-              if (!hrefLower.startsWith(r2)) {
-                console.warn("⚠️ Deep link doesn't match redirect URI - this might be a different deep link");
-                return;
-              }
+              if (!hrefLower.startsWith(r2)) return;
 
-              if (deepLinkHandledRef.current) {
-                console.warn("⚠️ Deep link already handled (duplicate)");
-                return;
-              }
+              if (deepLinkHandledRef.current) return;
               deepLinkHandledRef.current = true;
 
               const code = url.searchParams.get("code");
@@ -1857,59 +1814,23 @@ export default function App() {
               const errorParam = url.searchParams.get("error");
               const errorDesc = url.searchParams.get("error_description");
 
-              console.log("✓ Code:", code, "State:", state);
               if (errorParam) throw new Error(errorDesc || errorParam);
               if (!code) throw new Error("Missing authorization code");
 
-              console.log("🔐 Exchanging code for token...");
               await handleOAuthCallback({ code, state });
             } catch (e) {
-              console.error("❌ Deep link error:", e);
               setError(String(e?.message || e));
               deepLinkHandledRef.current = false;
             }
           });
 
-          // Also listen for app resume to check for pending OAuth completion
-          CapApp.addListener("appResume", async () => {
-            console.log("📱 App resumed - checking for pending OAuth...");
-            if (deepLinkHandledRef.current) {
-              console.log("✓ OAuth already handled, skipping check");
-              return;
-            }
+          // Fallback listener for app resume
+          const appResumeListener = CapApp.addListener("appResume", async () => {
+            if (deepLinkHandledRef.current) return;
             const pkce = await Preferences.get({ key: K.PKCE });
             if (pkce?.value) {
-              console.warn("⚠️ Found pending PKCE - checking sessionStorage for authorization code from callback page...");
-              try {
-                const savedCode = window.sessionStorage.getItem("oauth_code");
-                const savedState = window.sessionStorage.getItem("oauth_state");
-                const savedError = window.sessionStorage.getItem("oauth_error");
-                
-                if (savedError) {
-                  const errorDesc = window.sessionStorage.getItem("oauth_error_description");
-                  console.error("❌ OAuth error:", savedError, errorDesc);
-                  window.sessionStorage.removeItem("oauth_error");
-                  window.sessionStorage.removeItem("oauth_error_description");
-                  throw new Error(errorDesc || savedError);
-                }
-                
-                if (savedCode && savedState) {
-                  console.log("✓ Found OAuth code in sessionStorage - processing...");
-                  window.sessionStorage.removeItem("oauth_code");
-                  window.sessionStorage.removeItem("oauth_state");
-                  deepLinkHandledRef.current = true;
-                  const pkceObj = safeJsonParse(pkce.value);
-                  if (pkceObj?.verifier) {
-                    await handleOAuthCallback({ code: savedCode, state: savedState });
-                  }
-                } else {
-                  console.log("⚠️ No OAuth code found in sessionStorage yet");
-                }
-              } catch (e) {
-                console.error("❌ OAuth resume error:", e);
-                setError(String(e?.message || e));
-                deepLinkHandledRef.current = false;
-              }
+              // Small delay to ensure any pending deep link events are processed
+              await new Promise(resolve => setTimeout(resolve, 500));
             }
           });
         }
@@ -2584,6 +2505,376 @@ export default function App() {
     });
   }
 
+  // ================================
+  // 🧮 SMART PROJECT CALCULATOR
+  // ================================
+  
+  // Project type configurations with industry-standard formulas
+  const PROJECT_CALC_CONFIG = {
+    decking: {
+      title: "Decking",
+      icon: "🪵",
+      description: "Calculate screws for timber decking",
+      inputs: [
+        { key: "length", label: "Deck Length", unit: "m", placeholder: "4", type: "number" },
+        { key: "width", label: "Deck Width", unit: "m", placeholder: "3", type: "number" },
+        { key: "boardWidth", label: "Board Width", unit: "mm", placeholder: "140", type: "number", default: 140 },
+        { key: "joistSpacing", label: "Joist Spacing", unit: "mm", placeholder: "400", type: "select", options: ["300", "400", "450", "500", "600"], default: "400" },
+      ],
+      calculate: (inputs) => {
+        const area = parseFloat(inputs.length) * parseFloat(inputs.width);
+        const boardWidthM = parseFloat(inputs.boardWidth) / 1000;
+        const joistSpacingM = parseFloat(inputs.joistSpacing) / 1000;
+        
+        // Number of boards = width / board width
+        const numBoards = Math.ceil(parseFloat(inputs.width) / boardWidthM);
+        // Number of joists = (length / joist spacing) + 1
+        const numJoists = Math.ceil(parseFloat(inputs.length) / joistSpacingM) + 1;
+        // 2 screws per board per joist
+        const screwsPerBoard = numJoists * 2;
+        const totalScrews = numBoards * screwsPerBoard;
+        // Add 10% wastage
+        const totalWithWastage = Math.ceil(totalScrews * 1.1);
+        
+        return {
+          area: area.toFixed(1),
+          totalFixings: totalWithWastage,
+          breakdown: [
+            { label: "Deck Area", value: `${area.toFixed(1)} m²` },
+            { label: "Boards Needed", value: `~${numBoards}` },
+            { label: "Joists", value: `${numJoists}` },
+            { label: "Screws (2 per board/joist)", value: totalScrews.toLocaleString() },
+            { label: "With 10% Wastage", value: totalWithWastage.toLocaleString() },
+          ],
+          recommendations: [
+            { name: "Decking Screws 4.5 x 60mm", searchTerm: "decking screw 60", qty: totalWithWastage },
+            { name: "Joist Hangers (if needed)", searchTerm: "joist hanger", qty: numJoists },
+          ],
+        };
+      },
+    },
+    fencing: {
+      title: "Fencing",
+      icon: "🏗️",
+      description: "Calculate fixings for panel or closeboard fencing",
+      inputs: [
+        { key: "length", label: "Total Run Length", unit: "m", placeholder: "10", type: "number" },
+        { key: "height", label: "Fence Height", unit: "m", placeholder: "1.8", type: "select", options: ["0.9", "1.2", "1.5", "1.8", "2.0"], default: "1.8" },
+        { key: "type", label: "Fence Type", unit: "", placeholder: "", type: "select", options: ["Panel", "Closeboard"], default: "Panel" },
+        { key: "postSpacing", label: "Post Spacing", unit: "m", placeholder: "1.83", type: "select", options: ["1.83", "2.4", "3.0"], default: "1.83" },
+      ],
+      calculate: (inputs) => {
+        const length = parseFloat(inputs.length);
+        const height = parseFloat(inputs.height);
+        const postSpacing = parseFloat(inputs.postSpacing);
+        const isPanel = inputs.type === "Panel";
+        
+        // Number of posts = (length / spacing) + 1
+        const numPosts = Math.ceil(length / postSpacing) + 1;
+        // Number of panels/bays
+        const numPanels = numPosts - 1;
+        
+        let totalNails = 0;
+        let totalScrews = 0;
+        let totalBolts = 0;
+        
+        if (isPanel) {
+          // Panel clips: 4 per panel
+          totalScrews = numPanels * 4;
+          // Post caps: 1 per post (screws/nails)
+          totalNails = numPosts * 4;
+          // Postcrete/bolt per post
+          totalBolts = numPosts;
+        } else {
+          // Closeboard: rails (2-3 per bay), boards per bay
+          const rails = height > 1.5 ? 3 : 2;
+          const boardsPerBay = Math.ceil(postSpacing * 1000 / 100); // ~100mm boards
+          // 2 nails per board per rail
+          totalNails = numPanels * boardsPerBay * rails * 2;
+          // Rail screws: 2 per rail end
+          totalScrews = numPanels * rails * 4;
+          totalBolts = numPosts;
+        }
+        
+        const totalWithWastage = Math.ceil((totalNails + totalScrews) * 1.1);
+        
+        return {
+          area: (length * height).toFixed(1),
+          totalFixings: totalWithWastage,
+          breakdown: [
+            { label: "Fence Run", value: `${length}m × ${height}m` },
+            { label: "Posts Needed", value: numPosts },
+            { label: isPanel ? "Panels" : "Bays", value: numPanels },
+            { label: isPanel ? "Panel Clips/Screws" : "Rail Screws", value: totalScrews },
+            { label: "Nails", value: totalNails.toLocaleString() },
+            { label: "With 10% Wastage", value: totalWithWastage.toLocaleString() },
+          ],
+          recommendations: isPanel ? [
+            { name: "Fence Panel Clips", searchTerm: "fence panel clip", qty: totalScrews },
+            { name: "Post Cap Nails 50mm", searchTerm: "galvanised nail 50", qty: totalNails },
+            { name: "Postcrete (per post)", searchTerm: "postcrete", qty: numPosts },
+          ] : [
+            { name: "Galv Ring Shank Nails 65mm", searchTerm: "ring shank nail 65", qty: totalNails },
+            { name: "Coach Screws 10x100mm", searchTerm: "coach screw 100", qty: totalScrews },
+            { name: "Postcrete (per post)", searchTerm: "postcrete", qty: numPosts },
+          ],
+        };
+      },
+    },
+    plasterboard: {
+      title: "Plasterboard",
+      icon: "🧱",
+      description: "Calculate screws for plasterboard/drywall",
+      inputs: [
+        { key: "length", label: "Wall/Ceiling Length", unit: "m", placeholder: "4", type: "number" },
+        { key: "height", label: "Wall Height (or Width)", unit: "m", placeholder: "2.4", type: "number" },
+        { key: "layers", label: "Board Layers", unit: "", placeholder: "1", type: "select", options: ["1", "2"], default: "1" },
+        { key: "studSpacing", label: "Stud/Joist Spacing", unit: "mm", placeholder: "400", type: "select", options: ["400", "450", "600"], default: "400" },
+      ],
+      calculate: (inputs) => {
+        const length = parseFloat(inputs.length);
+        const height = parseFloat(inputs.height);
+        const layers = parseInt(inputs.layers);
+        const studSpacing = parseFloat(inputs.studSpacing) / 1000;
+        
+        const area = length * height;
+        // Standard board is 2.4m x 1.2m = 2.88m²
+        const boardSize = 2.88;
+        const numBoards = Math.ceil(area / boardSize) * layers;
+        
+        // Screws at 300mm centres along studs
+        // Per board: perimeter + internal studs
+        const screwsPerBoard = Math.ceil((2.4 / 0.3) * (1.2 / studSpacing + 2)) * 2;
+        const totalScrews = numBoards * screwsPerBoard;
+        const totalWithWastage = Math.ceil(totalScrews * 1.15);
+        
+        return {
+          area: area.toFixed(1),
+          totalFixings: totalWithWastage,
+          breakdown: [
+            { label: "Total Area", value: `${area.toFixed(1)} m²` },
+            { label: "Boards (2.4×1.2m)", value: numBoards },
+            { label: "Layers", value: layers },
+            { label: "Screws per Board", value: `~${screwsPerBoard}` },
+            { label: "Total Screws", value: totalScrews.toLocaleString() },
+            { label: "With 15% Wastage", value: totalWithWastage.toLocaleString() },
+          ],
+          recommendations: [
+            { name: "Drywall Screws 32mm (1st layer)", searchTerm: "drywall screw 32", qty: layers === 2 ? Math.ceil(totalScrews / 2) : totalWithWastage },
+            ...(layers === 2 ? [{ name: "Drywall Screws 42mm (2nd layer)", searchTerm: "drywall screw 42", qty: Math.ceil(totalScrews / 2) }] : []),
+            { name: "Joint Tape (per 10m²)", searchTerm: "joint tape", qty: Math.ceil(area / 10) },
+          ],
+        };
+      },
+    },
+    roofing: {
+      title: "Roofing",
+      icon: "🏠",
+      description: "Calculate fixings for roof tiles or sheets",
+      inputs: [
+        { key: "length", label: "Roof Length", unit: "m", placeholder: "8", type: "number" },
+        { key: "rafterLength", label: "Rafter Length (slope)", unit: "m", placeholder: "5", type: "number" },
+        { key: "type", label: "Covering Type", unit: "", placeholder: "", type: "select", options: ["Clay/Concrete Tiles", "Slate", "Corrugated Sheets"], default: "Clay/Concrete Tiles" },
+        { key: "battenSpacing", label: "Batten Gauge", unit: "mm", placeholder: "300", type: "select", options: ["100", "265", "300", "345"], default: "300" },
+      ],
+      calculate: (inputs) => {
+        const length = parseFloat(inputs.length);
+        const rafterLength = parseFloat(inputs.rafterLength);
+        const battenSpacing = parseFloat(inputs.battenSpacing) / 1000;
+        const type = inputs.type;
+        
+        // 2 slopes typically
+        const area = length * rafterLength * 2;
+        
+        // Batten rows per slope
+        const battenRows = Math.ceil(rafterLength / battenSpacing);
+        // Rafters typically at 400-600mm
+        const rafters = Math.ceil(length / 0.6);
+        
+        let nailsPerTile = 2;
+        let tilesPerM2 = 10; // varies by tile type
+        
+        if (type === "Slate") {
+          nailsPerTile = 2;
+          tilesPerM2 = 20;
+        } else if (type === "Corrugated Sheets") {
+          nailsPerTile = 8; // fixings per sheet
+          tilesPerM2 = 0.3; // sheets per m²
+        }
+        
+        const totalTiles = Math.ceil(area * tilesPerM2);
+        const tileNails = totalTiles * nailsPerTile;
+        const battenNails = battenRows * 2 * rafters * 2; // 2 nails per rafter intersection
+        const totalNails = Math.ceil((tileNails + battenNails) * 1.1);
+        
+        return {
+          area: area.toFixed(1),
+          totalFixings: totalNails,
+          breakdown: [
+            { label: "Roof Area (both slopes)", value: `${area.toFixed(1)} m²` },
+            { label: "Batten Rows (per slope)", value: battenRows },
+            { label: type === "Corrugated Sheets" ? "Sheets Needed" : "Tiles Needed", value: `~${totalTiles}` },
+            { label: "Tile/Sheet Fixings", value: tileNails.toLocaleString() },
+            { label: "Batten Nails", value: battenNails.toLocaleString() },
+            { label: "Total with 10% Wastage", value: totalNails.toLocaleString() },
+          ],
+          recommendations: type === "Corrugated Sheets" ? [
+            { name: "Roofing Screws with Washer", searchTerm: "roofing screw washer", qty: tileNails },
+            { name: "Galv Batten Nails 65mm", searchTerm: "batten nail 65", qty: battenNails },
+          ] : [
+            { name: type === "Slate" ? "Copper Slate Nails 38mm" : "Aluminium Tile Nails", searchTerm: type === "Slate" ? "copper nail 38" : "tile nail", qty: tileNails },
+            { name: "Galv Batten Nails 65mm", searchTerm: "batten nail 65", qty: battenNails },
+            { name: "Tile Clips (every 5th tile)", searchTerm: "tile clip", qty: Math.ceil(totalTiles / 5) },
+          ],
+        };
+      },
+    },
+    general: {
+      title: "General Area",
+      icon: "📐",
+      description: "Calculate fixings for any area with custom spacing",
+      inputs: [
+        { key: "area", label: "Total Area", unit: "m²", placeholder: "20", type: "number" },
+        { key: "spacing", label: "Fixing Spacing", unit: "mm", placeholder: "300", type: "select", options: ["150", "200", "250", "300", "400", "500", "600"], default: "300" },
+        { key: "pattern", label: "Fixing Pattern", unit: "", placeholder: "", type: "select", options: ["Grid", "Perimeter Only", "Diagonal"], default: "Grid" },
+      ],
+      calculate: (inputs) => {
+        const area = parseFloat(inputs.area);
+        const spacing = parseFloat(inputs.spacing) / 1000;
+        const pattern = inputs.pattern;
+        
+        let fixingsPerM2;
+        if (pattern === "Grid") {
+          fixingsPerM2 = Math.pow(1 / spacing, 2);
+        } else if (pattern === "Perimeter Only") {
+          // Assume square area, perimeter only
+          const side = Math.sqrt(area);
+          const perimeter = side * 4;
+          fixingsPerM2 = (perimeter / spacing) / area;
+        } else {
+          // Diagonal pattern - slightly more than grid
+          fixingsPerM2 = Math.pow(1 / spacing, 2) * 1.4;
+        }
+        
+        const totalFixings = Math.ceil(area * fixingsPerM2);
+        const totalWithWastage = Math.ceil(totalFixings * 1.1);
+        
+        return {
+          area: area.toFixed(1),
+          totalFixings: totalWithWastage,
+          breakdown: [
+            { label: "Area", value: `${area} m²` },
+            { label: "Spacing", value: `${inputs.spacing}mm` },
+            { label: "Pattern", value: pattern },
+            { label: "Fixings per m²", value: fixingsPerM2.toFixed(1) },
+            { label: "Total Fixings", value: totalFixings.toLocaleString() },
+            { label: "With 10% Wastage", value: totalWithWastage.toLocaleString() },
+          ],
+          recommendations: [
+            { name: "Multi-Purpose Screws", searchTerm: "multi purpose screw", qty: totalWithWastage },
+          ],
+        };
+      },
+    },
+  };
+
+  async function runProjectCalculation() {
+    const config = PROJECT_CALC_CONFIG[projectCalcType];
+    if (!config) return;
+    
+    // Validate all required inputs
+    const missingInputs = config.inputs.filter(input => {
+      const value = projectCalcInputs[input.key];
+      return !value || (input.type === "number" && (isNaN(parseFloat(value)) || parseFloat(value) <= 0));
+    });
+    
+    if (missingInputs.length > 0) {
+      setToast(`Please fill in: ${missingInputs.map(i => i.label).join(", ")}`);
+      return;
+    }
+    
+    try {
+      setProjectCalcLoading(true);
+      const results = config.calculate(projectCalcInputs);
+      
+      // Fetch real products for recommendations
+      const productsForRecommendations = await fetchRecommendedProducts(results.recommendations);
+      results.fetchedProducts = productsForRecommendations;
+      
+      setProjectCalcResults(results);
+    } catch (e) {
+      setToast("Calculation error: " + (e.message || "Invalid inputs"));
+    } finally {
+      setProjectCalcLoading(false);
+    }
+  }
+
+  // Fetch real products from Shopify based on search terms
+  async function fetchRecommendedProducts(recommendations) {
+    const allProducts = [];
+    
+    for (const rec of recommendations) {
+      try {
+        // Use Shopify's product search query
+        const q = `
+          query SearchProducts($query: String!, $first: Int!) {
+            products(first: $first, query: $query) {
+              edges {
+                node {
+                  id
+                  title
+                  handle
+                  vendor
+                  productType
+                  featuredImage { url altText }
+                  variants(first: 5) {
+                    edges {
+                      node {
+                        id
+                        title
+                        availableForSale
+                        price { amount currencyCode }
+                        sku
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `;
+        
+        const data = await shopifyStorefront(q, { query: rec.searchTerm, first: 3 });
+        const products = data?.products?.edges?.map(e => ({
+          ...normalizeProduct(e.node),
+          recommendedQty: rec.qty,
+          recommendationName: rec.name,
+        })) || [];
+        
+        allProducts.push(...products);
+      } catch (e) {
+        // If search fails for one term, continue with others
+      }
+    }
+    
+    // Remove duplicates by ID
+    const uniqueProducts = [];
+    const seenIds = new Set();
+    for (const p of allProducts) {
+      if (!seenIds.has(p.id)) {
+        seenIds.add(p.id);
+        uniqueProducts.push(p);
+      }
+    }
+    
+    return uniqueProducts.slice(0, 6); // Max 6 products
+  }
+
+  function resetProjectCalculator() {
+    setProjectCalcInputs({});
+    setProjectCalcResults(null);
+  }
+
   // Bulk pricing calculator
   function getBulkPrice(basePrice, quantity) {
     let discount = 1;
@@ -2787,17 +3078,10 @@ export default function App() {
     try {
       deepLinkHandledRef.current = false;
 
-      console.log("🔐 OIDC Config URL:", OIDC_CONFIG_URL);
-      console.log("🔐 ACCOUNT DOMAIN:", ACCOUNT_DOMAIN);
-      console.log("🔐 SHOP DOMAIN:", SHOP_DOMAIN);
-
       const oidcJson = oidc || (await fetchJson(OIDC_CONFIG_URL));
       const custJson = custApi || (await fetchJson(CUSTOMER_ACCOUNT_API_DISCOVERY_URL));
       if (!oidc) setOidc(oidcJson);
       if (!custApi) setCustApi(custJson);
-
-      console.log("✓ OIDC JSON:", oidcJson);
-      console.log("✓ Authorization endpoint:", oidcJson.authorization_endpoint);
 
       const verifier = randomString(64);
       const challenge = await sha256Base64Url(verifier);
@@ -2822,21 +3106,8 @@ export default function App() {
           code_challenge_method: "S256",
         });
 
-      console.log("🔴 CRITICAL OAuth Debug Info:");
-      console.log("   Authorization Endpoint:", oidcJson.authorization_endpoint);
-      console.log("   Client ID:", CUSTOMER_ACCOUNTS_CLIENT_ID);
-      console.log("   Redirect URI:", REDIRECT_URI);
-      console.log("   ⚠️  VERIFY THIS MATCHES YOUR SHOPIFY APP SETTINGS!");
-      console.log("   📍 Go to: Shopify Admin → Settings → Apps & Integrations → Develop Apps → [Your App] → Configuration");
-      console.log("   🌐 OPENING AUTH URL:", authUrl);
-      console.log("   🌐 URL length:", authUrl.length);
-      console.log("   🌐 Platform:", Capacitor.getPlatform());
-      console.log("   🌐 Is native:", isNative);
-
       await Browser.open({ url: authUrl, presentationStyle: "fullscreen" });
-      console.log("✓ Browser opened successfully - waiting for deep link callback...");
     } catch (e) {
-      console.error("❌ Login error:", e);
       setError(String(e?.message || e));
       setToast("❌ Login error: " + String(e?.message || e));
     }
@@ -5371,6 +5642,468 @@ export default function App() {
               </div>
             </div>
           )}
+
+          {/* ================================ */}
+          {/* 🧮 SMART PROJECT CALCULATOR VIEW */}
+          {/* ================================ */}
+          {view === "calculator" && (
+            <div style={card}>
+              {/* Header */}
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "space-between", 
+                alignItems: "center", 
+                marginBottom: 20,
+                paddingBottom: 16,
+                borderBottom: "1px solid rgba(255,255,255,0.08)"
+              }}>
+                <div>
+                  <div style={{ 
+                    fontSize: 22, 
+                    fontWeight: 900, 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: 10,
+                    background: `linear-gradient(135deg, ${BRAND.success}, #10b981)`,
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}>
+                    🧮 Project Calculator
+                  </div>
+                  <div style={{ fontSize: 13, color: BRAND.muted, marginTop: 4 }}>
+                    Calculate exactly what you need
+                  </div>
+                </div>
+                {projectCalcResults && (
+                  <Button variant="ghost" onClick={resetProjectCalculator} size="sm">
+                    Reset
+                  </Button>
+                )}
+              </div>
+
+              {/* Project Type Selector */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: BRAND.mutedLight, marginBottom: 10 }}>
+                  SELECT PROJECT TYPE
+                </div>
+                <div style={{ 
+                  display: "grid", 
+                  gridTemplateColumns: "repeat(3, 1fr)", 
+                  gap: 8,
+                }}>
+                  {Object.entries(PROJECT_CALC_CONFIG).map(([key, config]) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setProjectCalcType(key);
+                        setProjectCalcInputs({});
+                        setProjectCalcResults(null);
+                      }}
+                      style={{
+                        padding: "14px 8px",
+                        borderRadius: 14,
+                        border: projectCalcType === key 
+                          ? `2px solid ${BRAND.success}` 
+                          : "1px solid rgba(255,255,255,0.1)",
+                        background: projectCalcType === key 
+                          ? "rgba(16,185,129,0.15)" 
+                          : "rgba(255,255,255,0.03)",
+                        color: projectCalcType === key ? BRAND.success : "#fff",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      <span style={{ fontSize: 24 }}>{config.icon}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700 }}>{config.title}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Selected Project Description */}
+              {PROJECT_CALC_CONFIG[projectCalcType] && (
+                <div style={{
+                  padding: 14,
+                  borderRadius: 12,
+                  background: "rgba(16,185,129,0.08)",
+                  border: "1px solid rgba(16,185,129,0.2)",
+                  marginBottom: 20,
+                }}>
+                  <div style={{ 
+                    fontSize: 16, 
+                    fontWeight: 800, 
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: 8,
+                    marginBottom: 4,
+                  }}>
+                    {PROJECT_CALC_CONFIG[projectCalcType].icon} {PROJECT_CALC_CONFIG[projectCalcType].title}
+                  </div>
+                  <div style={{ fontSize: 13, color: BRAND.muted }}>
+                    {PROJECT_CALC_CONFIG[projectCalcType].description}
+                  </div>
+                </div>
+              )}
+
+              {/* Input Fields */}
+              {PROJECT_CALC_CONFIG[projectCalcType] && !projectCalcResults && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: BRAND.mutedLight, marginBottom: 12 }}>
+                    ENTER MEASUREMENTS
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {PROJECT_CALC_CONFIG[projectCalcType].inputs.map((input) => (
+                      <div key={input.key}>
+                        <label style={{ 
+                          fontSize: 13, 
+                          color: BRAND.mutedLight, 
+                          marginBottom: 6, 
+                          display: "block",
+                          fontWeight: 600,
+                        }}>
+                          {input.label} {input.unit && <span style={{ color: BRAND.muted }}>({input.unit})</span>}
+                        </label>
+                        {input.type === "select" ? (
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            {input.options.map((option) => (
+                              <button
+                                key={option}
+                                onClick={() => setProjectCalcInputs(prev => ({ ...prev, [input.key]: option }))}
+                                style={{
+                                  padding: "10px 16px",
+                                  borderRadius: 10,
+                                  border: (projectCalcInputs[input.key] || input.default) === option 
+                                    ? `2px solid ${BRAND.primary}` 
+                                    : "1px solid rgba(255,255,255,0.1)",
+                                  background: (projectCalcInputs[input.key] || input.default) === option 
+                                    ? "rgba(239,68,68,0.15)" 
+                                    : "rgba(255,255,255,0.03)",
+                                  color: "#fff",
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                {option}{input.unit && input.unit !== "" ? input.unit : ""}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <input
+                            type="number"
+                            value={projectCalcInputs[input.key] || ""}
+                            onChange={(e) => setProjectCalcInputs(prev => ({ ...prev, [input.key]: e.target.value }))}
+                            placeholder={input.placeholder}
+                            className="premium-input"
+                            style={{ 
+                              width: "100%", 
+                              boxSizing: "border-box",
+                              fontSize: 16,
+                              padding: "14px 16px",
+                            }}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Calculate Button */}
+              {!projectCalcResults && (
+                <Button
+                  variant="primary"
+                  onClick={runProjectCalculation}
+                  loading={projectCalcLoading}
+                  style={{ 
+                    width: "100%", 
+                    padding: "16px",
+                    fontSize: 16,
+                    background: `linear-gradient(135deg, ${BRAND.success}, #059669)`,
+                  }}
+                  icon="🧮"
+                >
+                  Calculate Requirements
+                </Button>
+              )}
+
+              {/* Results */}
+              {projectCalcResults && (
+                <div style={{ animation: "fadeIn 0.3s ease" }}>
+                  {/* Summary Card */}
+                  <div style={{
+                    padding: 20,
+                    borderRadius: 16,
+                    background: "linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05))",
+                    border: "1px solid rgba(16,185,129,0.3)",
+                    marginBottom: 16,
+                    textAlign: "center",
+                  }}>
+                    <div style={{ fontSize: 12, color: BRAND.muted, marginBottom: 4 }}>
+                      TOTAL FIXINGS NEEDED
+                    </div>
+                    <div style={{ 
+                      fontSize: 42, 
+                      fontWeight: 900, 
+                      color: BRAND.success,
+                      lineHeight: 1,
+                      marginBottom: 4,
+                    }}>
+                      {projectCalcResults.totalFixings.toLocaleString()}
+                    </div>
+                    <div style={{ fontSize: 13, color: BRAND.muted }}>
+                      for {projectCalcResults.area} m² area
+                    </div>
+                  </div>
+
+                  {/* Breakdown */}
+                  <div style={{
+                    padding: 16,
+                    borderRadius: 14,
+                    background: "rgba(0,0,0,0.3)",
+                    marginBottom: 16,
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: BRAND.mutedLight, marginBottom: 12 }}>
+                      📊 CALCULATION BREAKDOWN
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {projectCalcResults.breakdown.map((item, idx) => (
+                        <div key={idx} style={{ 
+                          display: "flex", 
+                          justifyContent: "space-between",
+                          padding: "8px 0",
+                          borderBottom: idx < projectCalcResults.breakdown.length - 1 
+                            ? "1px solid rgba(255,255,255,0.05)" 
+                            : "none",
+                        }}>
+                          <span style={{ color: BRAND.muted, fontSize: 13 }}>{item.label}</span>
+                          <span style={{ fontWeight: 700, fontSize: 13 }}>{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Real Products from Store */}
+                  {projectCalcResults.fetchedProducts && projectCalcResults.fetchedProducts.length > 0 && (
+                    <div style={{
+                      padding: 16,
+                      borderRadius: 14,
+                      background: "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))",
+                      border: "1px solid rgba(16,185,129,0.3)",
+                      marginBottom: 16,
+                    }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: BRAND.success, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+                        🛒 PRODUCTS FOR YOUR PROJECT
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                        {projectCalcResults.fetchedProducts.map((product, idx) => {
+                          const variant = product.variants?.[0];
+                          const price = variant?.price || 0;
+                          return (
+                            <div key={product.id} style={{
+                              display: "flex",
+                              gap: 12,
+                              padding: 12,
+                              borderRadius: 12,
+                              background: "rgba(0,0,0,0.4)",
+                              border: "1px solid rgba(255,255,255,0.08)",
+                            }}>
+                              {/* Product Image */}
+                              <div style={{
+                                width: 70,
+                                height: 70,
+                                borderRadius: 10,
+                                overflow: "hidden",
+                                background: "#111",
+                                flexShrink: 0,
+                              }}>
+                                {product.images?.[0]?.url ? (
+                                  <img 
+                                    src={product.images[0].url} 
+                                    alt={product.title}
+                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                  />
+                                ) : (
+                                  <div style={{ 
+                                    width: "100%", 
+                                    height: "100%", 
+                                    display: "flex", 
+                                    alignItems: "center", 
+                                    justifyContent: "center",
+                                    color: BRAND.muted,
+                                    fontSize: 24,
+                                  }}>📦</div>
+                                )}
+                              </div>
+                              
+                              {/* Product Info */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ 
+                                  fontWeight: 700, 
+                                  fontSize: 13, 
+                                  marginBottom: 4,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}>
+                                  {product.title}
+                                </div>
+                                <div style={{ fontSize: 16, fontWeight: 800, color: BRAND.success, marginBottom: 6 }}>
+                                  {displayPrice(price)}
+                                </div>
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={async () => {
+                                    if (variant?.id) {
+                                      await cartAddLine(variant.id, 1);
+                                      setToast(`✓ Added ${product.title} to cart`);
+                                    }
+                                  }}
+                                  disabled={!variant?.availableForSale}
+                                  style={{ 
+                                    padding: "8px 14px",
+                                    fontSize: 12,
+                                    background: variant?.availableForSale ? BRAND.primary : "#333",
+                                  }}
+                                  icon="🛒"
+                                >
+                                  {variant?.availableForSale ? "Add to Cart" : "Out of Stock"}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* View Cart Button */}
+                      <Button
+                        variant="dark"
+                        onClick={() => setView("cart")}
+                        style={{ width: "100%", marginTop: 14 }}
+                        icon="🛒"
+                      >
+                        View Cart
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* No products found message */}
+                  {projectCalcResults.fetchedProducts && projectCalcResults.fetchedProducts.length === 0 && (
+                    <div style={{
+                      padding: 16,
+                      borderRadius: 14,
+                      background: "rgba(255,255,255,0.03)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      marginBottom: 16,
+                      textAlign: "center",
+                    }}>
+                      <div style={{ fontSize: 32, marginBottom: 8 }}>🔍</div>
+                      <div style={{ fontWeight: 700, marginBottom: 4 }}>Searching for products...</div>
+                      <div style={{ fontSize: 12, color: BRAND.muted }}>
+                        Browse our collections to find the fixings you need
+                      </div>
+                      <Button
+                        variant="primary"
+                        onClick={() => setView("home")}
+                        style={{ marginTop: 12 }}
+                      >
+                        Browse Products
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* What You'll Need Summary */}
+                  <div style={{
+                    padding: 16,
+                    borderRadius: 14,
+                    background: "rgba(139,92,246,0.1)",
+                    border: "1px solid rgba(139,92,246,0.2)",
+                    marginBottom: 16,
+                  }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: BRAND.mutedLight, marginBottom: 12 }}>
+                      📋 SHOPPING LIST
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {projectCalcResults.recommendations.map((rec, idx) => (
+                        <div key={idx} style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "8px 0",
+                          borderBottom: idx < projectCalcResults.recommendations.length - 1 
+                            ? "1px solid rgba(255,255,255,0.05)" 
+                            : "none",
+                        }}>
+                          <span style={{ fontSize: 13, color: "#fff" }}>{rec.name}</span>
+                          <span style={{ 
+                            fontWeight: 700, 
+                            fontSize: 13, 
+                            color: BRAND.success,
+                            background: "rgba(16,185,129,0.2)",
+                            padding: "4px 10px",
+                            borderRadius: 6,
+                          }}>
+                            {rec.qty.toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <Button
+                      variant="ghost"
+                      onClick={resetProjectCalculator}
+                      style={{ flex: 1 }}
+                    >
+                      New Calculation
+                    </Button>
+                    <Button
+                      variant="primary"
+                      onClick={() => setView("home")}
+                      style={{ flex: 1 }}
+                      icon="🏠"
+                    >
+                      Browse More
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Tips */}
+              {!projectCalcResults && (
+                <div style={{
+                  marginTop: 20,
+                  padding: 14,
+                  borderRadius: 12,
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.05)",
+                }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: BRAND.mutedLight, marginBottom: 8 }}>
+                    💡 PRO TIPS
+                  </div>
+                  <ul style={{ 
+                    margin: 0, 
+                    paddingLeft: 16, 
+                    fontSize: 12, 
+                    color: BRAND.muted,
+                    lineHeight: 1.6,
+                  }}>
+                    <li>All calculations include wastage allowance</li>
+                    <li>Measurements should be in metres</li>
+                    <li>Results are estimates - buy a few extra for peace of mind</li>
+                    <li>Use our product search to find the exact fixings you need</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* BOTTOM NAV */}
@@ -5381,7 +6114,26 @@ export default function App() {
               <span className="nav-label" style={{ fontSize: 10, marginTop: 1 }}>Home</span>
             </button>
 
-
+            {/* CALCULATOR BUTTON - WOW FEATURE */}
+            <button
+              type="button"
+              style={{
+                ...navBtn(view === "calculator"),
+                background: view === "calculator" 
+                  ? `linear-gradient(135deg, ${BRAND.primary}, ${BRAND.secondary})`
+                  : "linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))",
+                border: view === "calculator" 
+                  ? "1px solid rgba(255,255,255,0.15)" 
+                  : "1px solid rgba(16,185,129,0.3)",
+              }}
+              onClick={() => {
+                resetProjectCalculator();
+                setView("calculator");
+              }}
+            >
+              <span style={{ fontSize: 18 }}>🧮</span>
+              <span className="nav-label" style={{ fontSize: 10, marginTop: 1, color: view === "calculator" ? "#fff" : BRAND.success }}>Calc</span>
+            </button>
 
             {/* PROJECTS BUTTON */}
             <button
