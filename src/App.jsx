@@ -317,6 +317,8 @@ const K = {
   ORDERS_CACHE: "acefixings_orders_cache",
   PROJECT_LISTS: "acefixings_project_lists",
   FAVORITES: "acefixings_favorites",
+  COLLECTIONS_CACHE: "acefixings_collections_cache",
+  PRODUCTS_CACHE: "acefixings_products_cache",
 };
 
 // ==========================
@@ -1131,6 +1133,7 @@ export default function App() {
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("");
   const [isNonVatCustomer, setIsNonVatCustomer] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   const [view, setView] = useState("home"); // home | collection | product | cart | orders | orderDetail | account | calculator
   const [activeCollection, setActiveCollection] = useState(null);
@@ -1737,6 +1740,12 @@ export default function App() {
   }
 
   useEffect(() => {
+    // Offline detection listeners
+    const goOffline = () => setIsOffline(true);
+    const goOnline = () => setIsOffline(false);
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
+
     (async () => {
       try {
         if (isNative) {
@@ -1765,6 +1774,11 @@ export default function App() {
 
         const savedCartId = await Preferences.get({ key: K.CART_ID });
         if (savedCartId?.value) setCartId(savedCartId.value);
+
+        // Load cached collections immediately (so app works offline)
+        const cachedCollections = await Preferences.get({ key: K.COLLECTIONS_CACHE });
+        const cc = cachedCollections?.value ? safeJsonParse(cachedCollections.value) : null;
+        if (cc?.items?.length) setCollections(cc.items);
 
         await discoverOidcAndApi();
 
@@ -1851,6 +1865,8 @@ export default function App() {
       try {
         CapApp.removeAllListeners();
       } catch {}
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", goOnline);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -1909,7 +1925,18 @@ export default function App() {
           imageAlt: e.node.image?.altText || e.node.title,
         })) || [];
       setCollections(items);
+      // Cache collections for offline use
+      await Preferences.set({ key: K.COLLECTIONS_CACHE, value: JSON.stringify({ savedAt: Date.now(), items }) });
     } catch (e) {
+      // If offline and we have cached data, don't show error
+      if (!navigator.onLine) {
+        const cached = await Preferences.get({ key: K.COLLECTIONS_CACHE });
+        const cc = cached?.value ? safeJsonParse(cached.value) : null;
+        if (cc?.items?.length) {
+          setCollections(cc.items);
+          return;
+        }
+      }
       setError(String(e?.message || e));
     } finally {
       setLoadingCollections(false);
@@ -1974,7 +2001,31 @@ export default function App() {
 
       const products = c.products?.edges?.map((e) => normalizeProduct(e.node)) || [];
       setCollectionProducts(products);
+      // Cache products for this collection for offline use
+      try {
+        const cached = await Preferences.get({ key: K.PRODUCTS_CACHE });
+        const existing = cached?.value ? safeJsonParse(cached.value) : {};
+        existing[handle] = { savedAt: Date.now(), collection: { id: c.id, title: c.title, handle: c.handle, descriptionHtml: c.descriptionHtml || "", description: c.description || "" }, products };
+        // Keep max 20 collections cached to limit storage
+        const keys = Object.keys(existing);
+        if (keys.length > 20) delete existing[keys[0]];
+        await Preferences.set({ key: K.PRODUCTS_CACHE, value: JSON.stringify(existing) });
+      } catch {}
     } catch (e) {
+      // If offline, try to load from cache
+      if (!navigator.onLine) {
+        try {
+          const cached = await Preferences.get({ key: K.PRODUCTS_CACHE });
+          const all = cached?.value ? safeJsonParse(cached.value) : {};
+          const entry = all[handle];
+          if (entry?.products?.length) {
+            setActiveCollection(entry.collection);
+            setCollectionProducts(entry.products);
+            setDescExpanded(false);
+            return;
+          }
+        } catch {}
+      }
       setError(String(e?.message || e));
     } finally {
       setLoadingCollectionProducts(false);
@@ -3953,6 +4004,25 @@ export default function App() {
       <FloatingDropsBackground />
 
       <div style={shell}>
+        {/* Offline Banner */}
+        {isOffline && (
+          <div style={{
+            background: "linear-gradient(90deg, #b45309, #d97706)",
+            color: "#fff",
+            padding: "8px 16px",
+            fontSize: 13,
+            fontWeight: 600,
+            textAlign: "center",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            zIndex: 9999,
+          }}>
+            <span>📡</span>
+            <span>You're offline — showing cached data</span>
+          </div>
+        )}
         <div style={{
           ...topbar,
           background: "linear-gradient(180deg, rgba(15,15,15,0.98) 0%, rgba(10,10,10,0.95) 100%)",
