@@ -1897,7 +1897,7 @@ export default function App() {
           }
         }
       `;
-      const data = await shopifyStorefront(q, { first: 40 });
+      const data = await shopifyStorefront(q, { first: 250 });
       const items =
         data?.collections?.edges?.map((e) => ({
           id: e.node.id,
